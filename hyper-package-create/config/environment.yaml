@@ -1,0 +1,8 @@
+name: snakemake_env
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - python=3.10
+  - mamba
+  - snakemake
