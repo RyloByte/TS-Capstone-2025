@@ -1,47 +1,10 @@
 configfile: "config/config.yaml"
 
-conda_env: "config/environment.yaml"
+conda_env: "config/environment.yaml"  # go in the config file?
 
-rule map_uniprot_ids:
-    input:
-        "data/input.fasta"
-    output:
-        "data/uniprot_ids.txt"
-    conda:
-        "envs/web_api.yaml"
-    script:
-        "scripts/get_uniprot_ids.py"
-
-rule get_homologous_proteins:
-    input:
-        "data/uniprot_ids.txt"
-    output:
-        "data/homologous_proteins.fasta"
-
-rule structure_clustering:
-    input:
-        "data/homologous_proteins.fasta"
-    output:
-        "data/structure_clusters/*.fasta"
-
-rule blast_clustering:
-    input:
-        "data/structure_cluters/*.fasta"
-    output:
-        "data/blast_clusters/*.fasta"
-
-rule treesapp_create:
-    input:
-        "data/blast_clusters/*.fasta"
-    output:
-        "data/reference_packages/*"
-    conda:
-        "envs/treesapp.yaml"
-    script:
-        "scripts/call_treesapp.py"
-
-rule hyperpackage_gather:
-    input:
-        "data/reference_packages/*"
-    output:
-        "data/hyperpackage.tar.gz"
+include: "rules/id_mapping.smk"
+include: "rules/homologous_proteins.smk"
+include: "rules/structure_clustering.smk"
+include: "rules/sequence_clustering.smk"
+include: "rules/treesapp_create.smk"
+include: "rules/hyperpackage_gather.smk"
