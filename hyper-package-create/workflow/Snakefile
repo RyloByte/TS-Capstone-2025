@@ -1,14 +1,20 @@
 configfile: "config/config.yaml"
 
-conda_env: "config/environment.yaml"  # top level environment, go in the config file?
+rule rename_fasta:
+    input:
+        "data/{sample}.fasta"
+    output:
+        "data/{sample}.faa"
+    shell:
+        "mv {input} {output}"
 
 rule id_mapping:
     conda:
         "envs/requests.yaml"
     input:
-        "data/input.faa"
+        "data/{sample}.faa"
     output:
-        "data/uniprot_mapped.faa"
+        "data/{sample}-uniprot_mapped.faa"
     script:
         "scripts/id_mapping.py"
 
@@ -16,9 +22,9 @@ rule homologous_proteins:
     conda:
         "envs/requests.yaml"
     input:
-        "data/uniprot_mapped.faa"
+        "data/{sample}-uniprot_mapped.faa"
     output:
-        "data/homologous_proteins.faa"
+        "data/{sample}-homologous_proteins.faa"
     script:
         "scripts/homologous_proteins.py"
 
@@ -26,9 +32,9 @@ rule structure_clustering:
     conda:
         "envs/tmalign.yaml"
     input:
-        "data/homologous_proteins.faa"
+        "data/{sample}-homologous_proteins.faa"
     output:
-        "data/structure_clusters/*.faa"
+        directory("data/{sample}-structure_clusters")
     script:
         "scripts/homologous_proteins.py"
 
@@ -36,9 +42,9 @@ rule sequence_clustering:
     conda:
         "envs/mmseqs2.yaml"
     input:
-        "data/structure_clusters/*.faa"
+        directory("data/{sample}-structure_clusters")
     output:
-        "data/sequence_clusters/*.faa"
+        directory("data/{sample}-sequence_clusters")
     script:
         "scripts/sequence_clustering.py"
 
@@ -46,16 +52,16 @@ rule treesapp_create:
     conda:
         "envs/treesapp.yaml"
     input:
-        "data/sequence_clusters/*.faa"
+        directory("data/{sample}-sequence_clusters")
     output:
-        "data/reference_packages/*"
+        directory("data/{sample}-reference_packages")
     script:
         "scripts/treesapp_create.py"
 
 rule hyperpackage_gather:
     input:
-        "data/reference_packages/*"
+        directory("data/{sample}-reference_packages")
     output:
-        "result/*"  # TODO need to figure out a scheme that can easily be identified by snakemake
+        "result/{sample}-hyperpackage.tar.gz"
     script:
         "scripts/hyperpackage_gather.py"

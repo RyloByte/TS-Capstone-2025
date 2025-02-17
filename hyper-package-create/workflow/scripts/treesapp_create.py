@@ -1,4 +1,5 @@
 from snakemake.script import snakemake
+import os
 import subprocess
 
 
@@ -8,8 +9,8 @@ def run_treesapp(input_faa: str):
         raise Exception(":(")
 
 
-# snakemake.input = ["data/squence_clusters/0.faa", ... "data/sequence_clusters/{n}.faa"]
-# output = "data/reference_packages/{0..n}/"
+# snakemake.input[0] = "data/{sample}-sequence_clusters", fill with {0..n}.faa
+# snakemake.output[0] = "data/{sample}-referencce_packages", fill with directories {0..n} for ref pkgs
 if __name__ == "__main__":
-    for file in snakemake.input:
-        pass
+    for file in os.listdir(snakemake.input[0]):
+        run_treesapp(os.path.join(snakemake.input[0], file))
