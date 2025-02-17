@@ -2,12 +2,14 @@ import itertools
 import os
 
 PDB_DIR = "data/pdb_structures"
-TMSCORE_EXEC = "./TMscore"
 
+# TODO simplify this...
 pdb_files = sorted([f for f in os.listdir(PDB_DIR) if f.endswith(".pdb")])
 pairs = [(os.path.join(PDB_DIR, f1), os.path.join(PDB_DIR, f2)) for f1, f2 in itertools.combinations(pdb_files, 2)]
 
 rule pairwise_tm_score:
+    conda:
+        "envs/tmalign.yaml"
     input:
         pdb1=lambda wildcards: wildcards.pdb1,
         pdb2=lambda wildcards: wildcards.pdb2
@@ -15,7 +17,7 @@ rule pairwise_tm_score:
         "data/{pdb1.stem}_vs_{pdb2.stem}.txt"
     shell:
         """
-        {TMSCORE_EXEC} {input.pdb1} {input.pdb2} | grep 'TM-score    =' | awk '{print $3}' > {output}
+        tmalign {input.pdb1} {input.pdb2} | grep 'TM-score\s*=' | awk '{print $3}' > {output}
         """
 
 rule aggregate_tm_scores:

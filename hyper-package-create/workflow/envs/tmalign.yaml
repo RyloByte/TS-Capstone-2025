@@ -1,0 +1,7 @@
+name: tmalign_env
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - tmalign
+  - libgfortran5
