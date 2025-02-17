@@ -1,9 +1,7 @@
-name: tmalign_env
+name: mmseqs2_env
 channels:
   - bioconda
   - conda-forge
 dependencies:
   - python=3.12
-  - requests
-  - tmalign
-  - libgfortran5
+  - mmseqs2

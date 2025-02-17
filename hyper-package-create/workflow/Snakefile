@@ -1,10 +1,61 @@
 configfile: "config/config.yaml"
 
-conda_env: "config/environment.yaml"  # go in the config file?
+conda_env: "config/environment.yaml"  # top level environment, go in the config file?
 
-include: "rules/id_mapping.smk"
-include: "rules/homologous_proteins.smk"
-include: "rules/structure_clustering.smk"
-include: "rules/sequence_clustering.smk"
-include: "rules/treesapp_create.smk"
-include: "rules/hyperpackage_gather.smk"
+rule id_mapping:
+    conda:
+        "envs/requests.yaml"
+    input:
+        "data/input.faa"
+    output:
+        "data/uniprot_mapped.faa"
+    script:
+        "scripts/id_mapping.py"
+
+rule homologous_proteins:
+    conda:
+        "envs/requests.yaml"
+    input:
+        "data/uniprot_mapped.faa"
+    output:
+        "data/homologous_proteins.faa"
+    script:
+        "scripts/homologous_proteins.py"
+
+rule structure_clustering:
+    conda:
+        "envs/tmalign.yaml"
+    input:
+        "data/homologous_proteins.faa"
+    output:
+        "data/structure_clusters/*.faa"
+    script:
+        "scripts/homologous_proteins.py"
+
+rule sequence_clustering:
+    conda:
+        "envs/mmseqs2.yaml"
+    input:
+        "data/structure_clusters/*.faa"
+    output:
+        "data/sequence_clusters/*.faa"
+    script:
+        "scripts/sequence_clustering.py"
+
+rule treesapp_create:
+    conda:
+        "envs/treesapp.yaml"
+    input:
+        "data/sequence_clusters/*.faa"
+    output:
+        "data/reference_packages/*"
+    script:
+        "scripts/treesapp_create.py"
+
+rule hyperpackage_gather:
+    input:
+        "data/reference_packages/*"
+    output:
+        "result/*"  # TODO need to figure out a scheme that can easily be identified by snakemake
+    script:
+        "scripts/hyperpackage_gather.py"
