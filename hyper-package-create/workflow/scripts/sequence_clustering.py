@@ -10,4 +10,4 @@ CLUSTER_THRESHOLD = snakemake.config["sequence_cluster_threshold"]
 # snakemake.output[0] = "data/{sample}-sequence_clusters", fill with {0..n}.faa
 if __name__ == "__main__":
     for file in os.listdir(snakemake.input[0]):
-        sequences = SeqIO.parse(os.path.join(snakemake.input[0], file), "faa")
+        sequences = SeqIO.parse(os.path.join(snakemake.input[0], file), "fasta")
