@@ -63,5 +63,5 @@ rule hyperpackage_gather:
         directory("data/{sample}-reference_packages")
     output:
         "result/{sample}-hyperpackage.tar.gz"
-    script:
-        "scripts/hyperpackage_gather.py"
+    shell:
+        "tar -czf {output} -C {input} ."

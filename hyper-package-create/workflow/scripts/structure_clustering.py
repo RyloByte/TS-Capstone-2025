@@ -5,6 +5,7 @@ import subprocess
 from snakemake.script import snakemake
 
 PDB_DIR = "data/pdb_structures"
+CLUSTER_THRESHOLD = snakemake.config["structure_cluster_threshold"]
 
 
 def get_rcsb_id(uniprot_id: str) -> str | None:

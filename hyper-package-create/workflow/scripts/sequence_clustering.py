@@ -3,6 +3,9 @@ from Bio import SeqIO
 import os
 
 
+CLUSTER_THRESHOLD = snakemake.config["sequence_cluster_threshold"]
+
+
 # snakemake.input[0] = "data/{sample}-structure_clusters", fill with {0..n}.faa
 # snakemake.output[0] = "data/{sample}-sequence_clusters", fill with {0..n}.faa
 if __name__ == "__main__":
