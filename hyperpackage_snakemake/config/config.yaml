@@ -1,0 +1,2 @@
+structure_cluster_threshold: 0.6
+sequence_cluster_threshold: 0.7

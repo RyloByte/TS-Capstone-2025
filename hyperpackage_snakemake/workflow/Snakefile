@@ -1,0 +1,67 @@
+configfile: "config/config.yaml"
+
+rule rename_fasta:
+    input:
+        "data/{sample}.fasta"
+    output:
+        "data/{sample}.faa"
+    shell:
+        "mv {input} {output}"
+
+rule id_mapping:
+    conda:
+        "envs/requests.yaml"
+    input:
+        "data/{sample}.faa"
+    output:
+        "data/{sample}-uniprot_mapped.faa"
+    script:
+        "scripts/id_mapping.py"
+
+rule homologous_proteins:
+    conda:
+        "envs/requests.yaml"
+    input:
+        "data/{sample}-uniprot_mapped.faa"
+    output:
+        "data/{sample}-homologous_proteins.faa"
+    script:
+        "scripts/homologous_proteins.py"
+
+rule structure_clustering:
+    conda:
+        "envs/tmalign.yaml"
+    input:
+        "data/{sample}-homologous_proteins.faa"
+    output:
+        directory("data/{sample}-structure_clusters")
+    script:
+        "scripts/homologous_proteins.py"
+
+rule sequence_clustering:
+    conda:
+        "envs/mmseqs2.yaml"
+    input:
+        directory("data/{sample}-structure_clusters")
+    output:
+        directory("data/{sample}-sequence_clusters")
+    script:
+        "scripts/sequence_clustering.py"
+
+rule treesapp_create:
+    conda:
+        "envs/treesapp.yaml"
+    input:
+        directory("data/{sample}-sequence_clusters")
+    output:
+        directory("data/{sample}-reference_packages")
+    script:
+        "scripts/treesapp_create.py"
+
+rule hyperpackage_gather:
+    input:
+        directory("data/{sample}-reference_packages")
+    output:
+        "result/{sample}-hyperpackage.tar.gz"
+    shell:
+        "tar -czf {output} -C {input} ."
