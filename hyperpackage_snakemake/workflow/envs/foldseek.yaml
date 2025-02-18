@@ -1,0 +1,6 @@
+name: foldseek_env
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - foldseek
