@@ -3,8 +3,8 @@ import os
 import subprocess
 
 
-def run_treesapp(input_faa: str):
-    result = subprocess.run(["treesapp", input_faa])
+def run_treesapp(input_faa: str, output_dir: str):
+    result = subprocess.run(["treesapp", "create", input_faa, "--headless"])
     if result.returncode != 0:
         raise Exception(":(")
 
