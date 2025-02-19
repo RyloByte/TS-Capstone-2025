@@ -30,7 +30,7 @@ def tm_score(pdb_1: str, pdb_2: str) -> float:
     
 
 # snakemake.input[0] = "data/{sample}-homologous_proteins.faa"
-# snakemake.output[0] = "data/{sample}-structure_clusters/", fill with {0..n}.faa
+# snakemake.output[0] = "data/{sample}-structure_clusters.tar.gz", fill with {0..n}.faa
 if __name__ == "__main__":
     # load sequences
     uniprot_ids = [seq.name for seq in SeqIO.parse(snakemake.input[0], "fasta")]

@@ -34,7 +34,7 @@ rule structure_clustering:
     input:
         "data/{sample}-homologous_proteins.faa"
     output:
-        directory("data/{sample}-structure_clusters")
+        "data/{sample}-structure_clusters.tar.gz"
     script:
         "scripts/homologous_proteins.py"
 
@@ -42,9 +42,9 @@ rule sequence_clustering:
     conda:
         "envs/mmseqs2.yaml"
     input:
-        directory("data/{sample}-structure_clusters")
+        "data/{sample}-structure_clusters.tar.gz"
     output:
-        directory("data/{sample}-sequence_clusters")
+        "data/{sample}-sequence_clusters.tar.gz"
     script:
         "scripts/sequence_clustering.py"
 
@@ -52,16 +52,8 @@ rule treesapp_create:
     conda:
         "envs/treesapp.yaml"
     input:
-        directory("data/{sample}-sequence_clusters")
-    output:
-        directory("data/{sample}-reference_packages")
-    script:
-        "scripts/treesapp_create.py"
-
-rule hyperpackage_gather:
-    input:
-        directory("data/{sample}-reference_packages")
+        "data/{sample}-sequence_clusters.tar.gz"
     output:
         "result/{sample}-hyperpackage.tar.gz"
-    shell:
-        "tar -czf {output} -C {input} ."
+    script:
+        "scripts/treesapp_create.py"
