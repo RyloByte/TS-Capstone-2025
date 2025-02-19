@@ -3,17 +3,71 @@ from snakemake.script import snakemake
 import re
 
 
+def get_uniprot_from_ncbi(ncbi_id: str) -> str | None:
+    pass  # TODO
+
+def get_uniprot_from_genbank(genbank_id: str) -> str | None:
+    pass  # TODO
+
+def get_uniprot_from_pdb(pdb_id: str) -> str | None:
+    pass  # TODO
+
+def get_uniprot_from_tremble(tremble_id: str) -> str | None:
+    pass  # TODO
+
+uniprot_id_pattern = re.compile(r"[OPQ]\d[A-Z0-9]{3}\d|[A-NR-Z]\d([A-Z][A-Z0-9]{2}\d){1,2}(\.\d+)?")
+
 id_patterns = {
-    "Uniprot/Swiss-Prot": re.compile(r"[OPQ]\d[A-Z0-9]{3}\d|[A-NR-Z]\d([A-Z][A-Z0-9]{2}\d){1,2}"),
-    "NCBI/RefSeq": re.compile(r"[A-Z]{2}_[A-Z0-9]+\.\d+"),
-    "GenBank": re.compile(r"[A-Z]{2}\d{5}\d*"),
-    "PDB": "",
-    "TrEMBLE": ""
+    # "Uniprot/Swiss-Prot": re.compile(r"sp|(.*)|"),
+    "NBCI/RefSeq": re.compile(r"ref|(.*)|"),
+    "GenBank": re.compile(r"gb|(.*)|"),
+    "PDB": re.compile(r"pdb|(.*)|"),
+    "TrEMBLE": re.compile(r"tr|(.*)|")
 }
 
+conversion_functions = {
+    "NBCI/RefSeq": get_uniprot_from_ncbi,
+    "GenBank": get_uniprot_from_genbank,
+    "PDB": get_uniprot_from_pdb,
+    "TrEMBLE": get_uniprot_from_tremble
+}
+
+def classify_id(seq_id: str) -> tuple[str, str] | None:
+    for format_name, pattern in id_patterns.items():
+        id_match = pattern.match(seq_id)
+        if id_match is not None:
+            return format_name, id_match.group()
+        
+def extract_uniprot_id(seq_id: str) -> str | None:
+    id_match = uniprot_id_pattern.match(seq_id)
+    if id_match is not None:
+        id_match = id_match.group()
+    return id_match
 
 
 # snakemake.input[0] = "data/{sample}.faa"
 # snakemake.output[0] = "data/{sample}-uniprot_mapped.faa"
 if __name__ == "__main__":
-    sequences = SeqIO.parse(snakemake.input[0], "fasta")
+    # load sequences
+    sequences = list(SeqIO.parse(snakemake.input[0], "fasta"))
+    for seq in sequences:
+        # try to extract a uniprot id from the sequence id
+        uniprot_id = extract_uniprot_id(seq.id)
+
+        if uniprot_id is None:
+            # get id type
+            id_info = classify_id(seq.id)
+            if id_info is None:
+                # did not recognize the id type
+                raise RuntimeError("Could not determine id type for: {seq.id}")
+            # convert id
+            uniprot_id = conversion_functions[id_info[0]](id_info[1])
+            if uniprot_id is None:
+                # conversion failed
+                raise RuntimeError("Could not get Uniprot Accession ID for {id_info[0]} ID: {id_info[1]}")
+        
+        # set id to uniprot id
+        seq.id = uniprot_id
+        # clear out the description (TODO is this necessary?)
+        seq.description = ""
+    SeqIO.write(sequences, snakemake.output[0], "fasta")

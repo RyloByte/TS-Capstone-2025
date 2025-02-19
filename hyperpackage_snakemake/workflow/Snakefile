@@ -42,7 +42,7 @@ rule sequence_clustering:
     conda:
         "envs/mmseqs2.yaml"
     input:
-        directory("data/{sample}-structure_clusters")
+        "data/{sample}-structure_clusters"
     output:
         directory("data/{sample}-sequence_clusters")
     script:
@@ -52,7 +52,7 @@ rule treesapp_create:
     conda:
         "envs/treesapp.yaml"
     input:
-        directory("data/{sample}-sequence_clusters")
+        "data/{sample}-sequence_clusters"
     output:
         directory("data/{sample}-reference_packages")
     script:
@@ -60,7 +60,7 @@ rule treesapp_create:
 
 rule hyperpackage_gather:
     input:
-        directory("data/{sample}-reference_packages")
+        "data/{sample}-reference_packages"
     output:
         "result/{sample}-hyperpackage.tar.gz"
     shell:
