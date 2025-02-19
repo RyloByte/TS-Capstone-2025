@@ -9,8 +9,8 @@ def run_treesapp(input_faa: str, output_dir: str):
         raise Exception(":(")
 
 
-# snakemake.input[0] = "data/{sample}-sequence_clusters", fill with {0..n}.faa
-# snakemake.output[0] = "data/{sample}-referencce_packages", fill with directories {0..n} for ref pkgs
+# snakemake.input[0] = "data/{sample}-sequence_clusters.tar.gz", fill with {0..n}.faa
+# snakemake.output[0] = "result/{sample}-hyperpackage.tar.gz", fill with directories {0..n} for ref pkgs
 if __name__ == "__main__":
     for file in os.listdir(snakemake.input[0]):
         run_treesapp(os.path.join(snakemake.input[0], file))
