@@ -7,7 +7,7 @@ import gzip
 
 logger = logging.getLogger()
 
-ec_pattern = re.compile(r"(?:EC:|ec:|)((?:\d+)(?:\.(?:\d+)){0,2}(?:\.(?:n?\d+))?)")
+ec_pattern = re.compile(r"(?<!\.)(?:EC:|ec:|)((?:\d+)(?:\.(?:\d+)){0,2}(?:\.(?:n?\d+))?)(?!\.)")
 MAX_HOMOLOGOUS_PROTEINS = snakemake.config["max_homologous_proteins"]
 
 # snakemake.input[0] = ["data/{sample}-ecnumber.txt", "utils/swissprot_data.tsv.gz", "utils/swissprot_sequences.fasta.gz"]
@@ -17,14 +17,18 @@ if __name__ == "__main__":
     with open(snakemake.input[0], "r") as f:
         ec_number = re.search(ec_pattern, f.read())
     if ec_number is None:
-        raise RuntimeError(f"Did not find EC number in {snakemake.input[0]}, ex. EC:1.2.3.4 or 4.5 etc.")
+        raise RuntimeError(
+            f"Did not find EC number in {snakemake.input[0]}, ex. EC:1.2.3.4 or 4.5 etc."
+        )
     ec_number = ec_number.group()
     logger.info(f"Found EC number: {ec_number}.")
 
     # get the matching proteins
     swissprot_df = pd.read_csv(snakemake.input[1], sep="\t", compression="gzip")
-    number_and_subnumber_matcher = re.compile(rf"(?<!\d|\.){ec_number}")
-    matching_sequences = swissprot_df[swissprot_df["EC number"].str.contains(number_and_subnumber_matcher)]
+    # number_and_subnumber_matcher = re.compile(rf"(?<!\d|\.){re.escape(ec_number)}")
+    matching_sequences = swissprot_df[
+        swissprot_df["EC number"].str.contains(rf"(?<!\d|\.){re.escape(ec_number)}", na=False)
+    ]
     logger.info(f"Found {len(matching_sequences)} sequences with compatible EC number.")
 
     # check if none were found
@@ -38,12 +42,13 @@ if __name__ == "__main__":
     # find the sequence for each accession ID
     # painfully inefficient but... ¯\_(ツ)_/¯
     output_sequences = []
-    with gzip.open(snakemake.input[2], "r") as f:
+    with gzip.open(snakemake.input[2], "rt") as f:
+        records = list(SeqIO.parse(f, "fasta"))
         for accession_id in matching_sequences["Entry"]:
             found_sequence = False
-            for record in SeqIO.parse(accession_id, "fasta"):
+            for record in records:
                 if accession_id in record.id:
-                    output_sequences.append((accession_id, record.seq))
+                    output_sequences.append(record)
                     found_sequence = True
                     break
             if not found_sequence:

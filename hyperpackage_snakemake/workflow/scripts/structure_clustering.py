@@ -11,15 +11,22 @@ CLUSTER_THRESHOLD = snakemake.config["structure_cluster_threshold"]
 def get_rcsb_id(uniprot_id: str) -> str | None:
     pass
 
+
 def get_alphafold_pdb(uniprot_id: str):
     pass
+
 
 def get_rcsb_pdb(uniprot_id: str):
     pass
 
+
 def pdb_pairs() -> list[tuple[str, str]]:
     # TODO unknown how the files come in
-    return [(os.path.join(PDB_DIR, f1), os.path.join(PDB_DIR, f2)) for f1, f2 in itertools.combinations(snakemake.input, 2)]
+    return [
+        (os.path.join(PDB_DIR, f1), os.path.join(PDB_DIR, f2))
+        for f1, f2 in itertools.combinations(snakemake.input, 2)
+    ]
+
 
 def tm_score(pdb_1: str, pdb_2: str) -> float:
     result = subprocess.run(["tmalign", pdb_1, pdb_2], capture_output=True, text=True)
@@ -27,7 +34,7 @@ def tm_score(pdb_1: str, pdb_2: str) -> float:
         raise Exception(":(")
     output = result.stdout
     # TODO regex the result and convert it to float
-    
+
 
 # snakemake.input[0] = "data/{sample}-homologous_proteins.faa"
 # snakemake.output[0] = "data/{sample}-structure_clusters.tar.gz", fill with {0..n}.faa

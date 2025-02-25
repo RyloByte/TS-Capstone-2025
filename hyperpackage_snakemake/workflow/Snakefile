@@ -17,6 +17,7 @@ rule download_swissprot_sequences:
         "utils/swissprot_sequences.fasta.gz"
     shell:
         """
+        echo "Downloading SwissProt sequences. This will take a few minutes..."; \
         mkdir -p utils; \
         wget -O {output} https://ftp.uniprot.org/pub/databases/uniprot/knowledgebase/complete/uniprot_sprot.fasta.gz; 
         """
@@ -26,21 +27,22 @@ rule download_swissprot_data:
         "utils/swissprot_data.tsv.gz"
     shell:
         """
+        echo "Downloading SwissProt data. This will take a few minutes..."; \
         mkdir -p utils; \
-        curl -o {output} "https://rest.uniprot.org/uniprotkb/stream?compressed=true&fields=accession%2Crhea%2Cid%2Cprotein_name%2Cxref_alphafolddb%2Cxref_pdb%2Corganism_id%2Cec%2Clineage_ids&format=tsv&query=(reviewed:true)"; \
+        curl -o {output} "https://rest.uniprot.org/uniprotkb/stream?compressed=true&fields=accession%2Crhea%2Cid%2Cprotein_name%2Cxref_alphafolddb%2Cxref_pdb%2Corganism_id%2Cec%2Clineage_ids&format=tsv&query=(reviewed:true)";
         """
 
 rule rename_fasta:
     input:
-        "data/{sample}{suffix}.fasta"
+        "input/{sample}{suffix}.fasta"
     output:
-        "data/{sample}{suffix}.faa"
+        "input/{sample}{suffix}.faa"
     shell:
         "mv {input} {output}"
 
 rule id_mapping:
     input:
-        "data/{sample}.faa"
+        "input/{sample}.faa"
     output:
         "data/{sample}-uniprot_mapped.faa"
     script:
@@ -48,7 +50,7 @@ rule id_mapping:
 
 rule rhea_homologous_proteins:
     input:
-        "data/{sample}-rhea_id.txt",
+        "input/{sample}-rhea_id.txt",
         "utils/swissprot_data.tsv.gz",
         "utils/swissprot_sequences.fasta.gz"
     output:
@@ -58,7 +60,7 @@ rule rhea_homologous_proteins:
 
 rule ec_homologous_proteins:
     input:
-        "data/{sample}-ecnumber.txt",
+        "input/{sample}-ecnumber.txt",
         "utils/swissprot_data.tsv.gz",
         "utils/swissprot_sequences.fasta.gz"
     output:
@@ -76,7 +78,7 @@ rule structure_clustering:
     output:
         "data/{sample}-structure_clusters.tar.gz"
     script:
-        "scripts/homologous_proteins.py"
+        "scripts/structure_clustering.py"
 
 rule sequence_clustering:
     conda:

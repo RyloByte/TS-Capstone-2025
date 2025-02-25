@@ -20,17 +20,29 @@ def generate_refpkg_name(n: int) -> str:
 def run_treesapp(input_faa: str, refpkg_name: str, output_dir: str):
     logger.debug(f"Running TreeSAPP, input: {input_faa} output: {output_dir}")
 
-    result = subprocess.run(["treesapp", "create", "-i", input_faa, "-c", refpkg_name, "-o", output_dir, "--headless"], capture_output=True, text=True)
-    
+    result = subprocess.run(
+        [
+            "treesapp",
+            "create",
+            "-i",
+            input_faa,
+            "-c",
+            refpkg_name,
+            "-o",
+            output_dir,
+            "--headless",
+        ],
+        capture_output=True,
+        text=True,
+    )
+
     if result.stdout:
         logger.debug(result.stdout.strip())
     if result.stderr:
         logger.warning(result.stderr.strip())
 
     if result.returncode != 0:
-        err_msg = f"Got non-zero return code from TreeSAPP: {result.returncode}"
-        logging.critical(err_msg)
-        raise RuntimeError(err_msg)
+        raise RuntimeError(f"Got non-zero return code from TreeSAPP: {result.returncode}")
 
 
 # snakemake.input[0] = "data/{sample}-sequence_clusters.tar.gz", fill with {0..n}.faa
