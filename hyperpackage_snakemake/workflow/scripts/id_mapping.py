@@ -59,12 +59,12 @@ if __name__ == "__main__":
             id_info = classify_id(seq.id)
             if id_info is None:
                 # did not recognize the id type
-                raise RuntimeError("Could not determine id type for: {seq.id}")
+                raise RuntimeError(f"Could not determine id type for: {seq.id}")
             # convert id
             uniprot_id = conversion_functions[id_info[0]](id_info[1])
             if uniprot_id is None:
                 # conversion failed
-                raise RuntimeError("Could not get Uniprot Accession ID for {id_info[0]} ID: {id_info[1]}")
+                raise RuntimeError(f"Could not get Uniprot Accession ID for {id_info[0]} ID: {id_info[1]}")
         
         # set id to uniprot id
         seq.id = uniprot_id
