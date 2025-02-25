@@ -5,7 +5,7 @@ rule download_foldseek_database:
         "envs/foldseek.yaml"
     output:
         "utils/foldseek_spdb/foldseek_spdb",
-    shell: 
+    shell:
         """
         mkdir -p utils/foldseek_spdb; \
         cd utils/foldseek_spdb; \
@@ -15,7 +15,7 @@ rule download_foldseek_database:
 rule download_swissprot_database:
     output:
         "utils/uniprot_spdb/uniprot_sprot.fasta"
-    shell: 
+    shell:
         """
         mkdir -p utils/uniprot_spdb; \
         cd utils/uniprot_spdb; \
@@ -51,8 +51,6 @@ rule rename_mapped_fasta:
         "mv {input} {output}"
 
 rule id_mapping:
-    conda:
-        "envs/requests.yaml"
     input:
         "data/{sample}.faa"
     output:
@@ -60,15 +58,23 @@ rule id_mapping:
     script:
         "scripts/id_mapping.py"
 
-rule homologous_proteins:
+rule reah_homologous_proteins:
     input:
-        "data/{sample}-uniprot_mapped.faa",
-        "utils/uniprot_spdb/uniprot_sprot.fasta",
-        "utils/uniprot_spdb/uniprotkb_AND_reviewed_true.tsv",
+        "data/{sample}-reahid.txt",
+        "data/swissprot.csv"
     output:
         "data/{sample}-uniprot_mapped.faa"
     script:
-        "scripts/homologous_proteins.py"
+        "scripts/reah_homologous_proteins.py"
+
+rule ec_homologous_proteins:
+    input:
+        "data/{sample}-ecid.txt",
+        "data/swissprot.csv"
+    output:
+        "data/{sample}-uniprot_mapped.faa"
+    script:
+        "scripts/ec_homologous_proteins.py"
 
 rule structure_clustering:
     conda:
