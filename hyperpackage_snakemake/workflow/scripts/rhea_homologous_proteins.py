@@ -41,15 +41,15 @@ if __name__ == "__main__":
     output_sequences = []
     with gzip.open(snakemake.input[2], "rt") as f:
         records = list(SeqIO.parse(f, "fasta"))
-        for accession_id in matching_sequences["Entry"]:
-            found_sequence = False
-            for record in records:
-                if accession_id in record.id:
-                    output_sequences.append(record)
-                    found_sequence = True
-                    break
-            if not found_sequence:
-                logger.error(f"Did not find sequence for accession ID {accession_id}.")
+    for accession_id in matching_sequences["Entry"]:
+        found_sequence = False
+        for record in records:
+            if accession_id in record.id:
+                output_sequences.append(record)
+                found_sequence = True
+                break
+        if not found_sequence:
+            logger.error(f"Did not find sequence for accession ID {accession_id}.")
 
     # write list of sequences to file
     SeqIO.write(output_sequences, snakemake.output[0], "fasta")
