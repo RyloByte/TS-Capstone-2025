@@ -1,5 +1,5 @@
 .snakemake
-data
-result
-utils
-input
+/data/
+/result/
+/utils/
+/input/
