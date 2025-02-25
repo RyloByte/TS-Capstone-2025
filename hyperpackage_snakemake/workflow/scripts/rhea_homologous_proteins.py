@@ -7,30 +7,28 @@ import gzip
 
 logger = logging.getLogger()
 
-reah_pattern = re.compile(r"(?:REAH:|reah:|)(\d{5})")
+rhea_pattern = re.compile(r"(?:RHEA:|rhea:|)(\d{5})")
 MAX_HOMOLOGOUS_PROTEINS = snakemake.config["max_homologous_proteins"]
 
-# snakemake.input = ["data/{sample}-reahid.txt", "utils/swissprot_data.tsv.gz", "utils/swissprot_sequences.fasta.gz"]
+# snakemake.input = ["data/{sample}-rheaid.txt", "utils/swissprot_data.tsv.gz", "utils/swissprot_sequences.fasta.gz"]
 # snakemake.output[0]= "data/{sample}-uniprot_mapped.faa"
 if __name__ == "__main__":
-    # load the ReahID
+    # load the Rhea ID
     with open(snakemake.input[0], "r") as f:
-        reah_id = re.search(reah_pattern, f.read())
-    if reah_id is None:
-        logger.critical(f"Did not find Reah ID in {snakemake.input[0]}, ex. REAH:12345 or 67890")
-        raise RuntimeError(f"Did not find Reah ID in {snakemake.input[0]}, ex. REAH:12345 or 67890")
-    reah_id = reah_id.group(0)
-    logger.info(f"Found Reah ID: {reah_id}.")
+        rhea_id = re.search(rhea_pattern, f.read())
+    if rhea_id is None:
+        raise RuntimeError(f"Did not find Rhea ID in {snakemake.input[0]}, ex. RHEA:12345 or 67890")
+    rhea_id = rhea_id.group()
+    logger.info(f"Found Rhea ID: {rhea_id}.")
 
     # get the matching proteins
     swissprot_df = pd.read_csv(snakemake.input[1], sep="\t", compression="gzip")
-    matching_sequences = swissprot_df[swissprot_df["Reah ID"].str.contains(reah_id)]
-    logger.info(f"Found {len(matching_sequences)} sequences with matching REAH ID.")
+    matching_sequences = swissprot_df[swissprot_df["Rhea ID"].str.contains(rhea_id)]
+    logger.info(f"Found {len(matching_sequences)} sequences with matching Rhea ID.")
 
     # check if none were found
     if len(matching_sequences) == 0:
-        logger.critical(f"Did not find any sequences that match Reah ID {reah_id}.")
-        raise RuntimeError(f"Did not find any sequences that match Reah ID {reah_id}.")
+        raise RuntimeError(f"Did not find any sequences that match Rhea ID {rhea_id}.")
 
     # clip to max allowed
     logger.info(f"Clipping matching sequences to {MAX_HOMOLOGOUS_PROTEINS}.")

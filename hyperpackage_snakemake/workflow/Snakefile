@@ -46,20 +46,21 @@ rule id_mapping:
     script:
         "scripts/id_mapping.py"
 
-rule reah_homologous_proteins:
+rule rhea_homologous_proteins:
     input:
-        "data/{sample}-reahid.txt",
+        "data/{sample}-rhea_id.txt",
         "utils/swissprot_data.tsv.gz",
         "utils/swissprot_sequences.fasta.gz"
     output:
         "data/{sample}-uniprot_mapped.faa"
     script:
-        "scripts/reah_homologous_proteins.py"
+        "scripts/rhea_homologous_proteins.py"
 
 rule ec_homologous_proteins:
     input:
         "data/{sample}-ecnumber.txt",
-        "utils/swissprot_data.tsv.gz"
+        "utils/swissprot_data.tsv.gz",
+        "utils/swissprot_sequences.fasta.gz"
     output:
         "data/{sample}-uniprot_mapped.faa"
     script:
