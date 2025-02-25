@@ -1,8 +1,6 @@
 configfile: "config/config.yaml"
 
 rule download_swissprot:
-    conda:
-        "envs/requests.yaml"
     output:
         "data/swissprot.csv"
     script:
@@ -25,8 +23,6 @@ rule rename_mapped_fasta:
         "mv {input} {output}"
 
 rule id_mapping:
-    conda:
-        "envs/requests.yaml"
     input:
         "data/{sample}.faa"
     output:
@@ -34,14 +30,23 @@ rule id_mapping:
     script:
         "scripts/id_mapping.py"
 
-rule homologous_proteins:
+rule reah_homologous_proteins:
     input:
         "data/{sample}-reahid.txt",
         "data/swissprot.csv"
     output:
         "data/{sample}-uniprot_mapped.faa"
     script:
-        "scripts/homologous_proteins.py"
+        "scripts/reah_homologous_proteins.py"
+
+rule ec_homologous_proteins:
+    input:
+        "data/{sample}-ecid.txt",
+        "data/swissprot.csv"
+    output:
+        "data/{sample}-uniprot_mapped.faa"
+    script:
+        "scripts/ec_homologous_proteins.py"
 
 rule structure_clustering:
     conda:
@@ -51,7 +56,7 @@ rule structure_clustering:
     output:
         "data/{sample}-structure_clusters.tar.gz"
     script:
-        "scripts/homologous_proteins.py"
+        "scripts/reah_homologous_proteins.py"
 
 rule sequence_clustering:
     conda:
