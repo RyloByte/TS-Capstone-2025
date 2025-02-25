@@ -61,14 +61,12 @@ rule id_mapping:
         "scripts/id_mapping.py"
 
 rule homologous_proteins:
-    conda:
-        "envs/requests.yaml"
     input:
         "data/{sample}-uniprot_mapped.faa",
         "utils/uniprot_spdb/uniprot_sprot.fasta",
         "utils/uniprot_spdb/uniprotkb_AND_reviewed_true.tsv",
     output:
-        "data/{sample}-homologous_proteins.faa"
+        "data/{sample}-uniprot_mapped.faa"
     script:
         "scripts/homologous_proteins.py"
 
@@ -98,7 +96,8 @@ rule treesapp_create:
     conda:
         "envs/treesapp.yaml"
     input:
-        "data/{sample}-sequence_clusters.tar.gz"
+        "data/{sample}-sequence_clusters.tar.gz",
+        "data/swissprot.csv"
     output:
         "result/{sample}-hyperpackage.tar.gz"
     script:
