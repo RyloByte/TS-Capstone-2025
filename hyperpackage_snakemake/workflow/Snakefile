@@ -1,10 +1,26 @@
 configfile: "config/config.yaml"
 
+rule download_swissprot:
+    conda:
+        "envs/requests.yaml"
+    output:
+        "data/swissprot.csv"
+    script:
+        "scripts/download_swissprot.py"
+
 rule rename_fasta:
     input:
         "data/{sample}.fasta"
     output:
         "data/{sample}.faa"
+    shell:
+        "mv {input} {output}"
+
+rule rename_mapped_fasta:
+    input:
+        "data/{sample}-uniprot_mapped.fasta"
+    output:
+        "data/{sample}-uniprot_mapped.faa"
     shell:
         "mv {input} {output}"
 
@@ -19,12 +35,11 @@ rule id_mapping:
         "scripts/id_mapping.py"
 
 rule homologous_proteins:
-    conda:
-        "envs/requests.yaml"
     input:
-        "data/{sample}-uniprot_mapped.faa"
+        "data/{sample}-reahid.txt",
+        "data/swissprot.csv"
     output:
-        "data/{sample}-homologous_proteins.faa"
+        "data/{sample}-uniprot_mapped.faa"
     script:
         "scripts/homologous_proteins.py"
 
@@ -32,7 +47,7 @@ rule structure_clustering:
     conda:
         "envs/tmalign.yaml"
     input:
-        "data/{sample}-homologous_proteins.faa"
+        "data/{sample}-uniprot_mapped.faa"
     output:
         "data/{sample}-structure_clusters.tar.gz"
     script:
@@ -52,7 +67,8 @@ rule treesapp_create:
     conda:
         "envs/treesapp.yaml"
     input:
-        "data/{sample}-sequence_clusters.tar.gz"
+        "data/{sample}-sequence_clusters.tar.gz",
+        "data/swissprot.csv"
     output:
         "result/{sample}-hyperpackage.tar.gz"
     script:
