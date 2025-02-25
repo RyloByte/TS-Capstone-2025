@@ -1,12 +1,38 @@
 configfile: "config/config.yaml"
 
-rule download_swissprot:
+rule download_foldseek_database:
     conda:
-        "envs/requests.yaml"
+        "envs/foldseek.yaml"
     output:
-        "data/swissprot.csv"
-    script:
-        "scripts/download_swissprot.py"
+        "utils/foldseek_spdb/foldseek_spdb",
+    shell: 
+        """
+        mkdir -p utils/foldseek_spdb; \
+        cd utils/foldseek_spdb; \
+        foldseek databases Alphafold/Swiss-Prot foldseek_spdb tmp; \
+        """
+
+rule download_swissprot_database:
+    output:
+        "utils/uniprot_spdb/uniprot_sprot.fasta"
+    shell: 
+        """
+        mkdir -p utils/uniprot_spdb; \
+        cd utils/uniprot_spdb; \
+        wget https://ftp.uniprot.org/pub/databases/uniprot/knowledgebase/complete/uniprot_sprot.fasta.gz; 
+        gunzip uniprot_sprot.fasta.gz; \
+        """
+
+rule download_swissprot_idmap:
+    output:
+        "utils/uniprot_spdb/uniprotkb_AND_reviewed_true.tsv"
+    shell:
+        """
+        mkdir -p utils/uniprot_spdb; \
+        cd utils/uniprot_spdb; \
+        curl -o uniprotkb_AND_reviewed_true.tsv.gz "https://rest.uniprot.org/uniprotkb/stream?compressed=true&fields=accession%2Crhea%2Cid%2Cprotein_name%2Cxref_alphafolddb%2Cxref_pdb%2Corganism_id&format=tsv&query=(reviewed:true)"; \
+        gunzip uniprotkb_AND_reviewed_true.tsv.gz;
+        """
 
 rule rename_fasta:
     input:
@@ -36,8 +62,9 @@ rule id_mapping:
 
 rule homologous_proteins:
     input:
-        "data/{sample}-reahid.txt",
-        "data/swissprot.csv"
+        "data/{sample}-uniprot_mapped.faa",
+        "utils/uniprot_spdb/uniprot_sprot.fasta",
+        "utils/uniprot_spdb/uniprotkb_AND_reviewed_true.tsv",
     output:
         "data/{sample}-uniprot_mapped.faa"
     script:
@@ -45,9 +72,11 @@ rule homologous_proteins:
 
 rule structure_clustering:
     conda:
-        "envs/tmalign.yaml"
+        "envs/foldseek.yaml"
     input:
-        "data/{sample}-uniprot_mapped.faa"
+        "data/{sample}-homologous_proteins.faa",
+        "utils/foldseek_spdb/foldseek_spdb",
+        "utils/uniprot_spdb/uniprotkb_AND_reviewed_true.tsv"
     output:
         "data/{sample}-structure_clusters.tar.gz"
     script:
