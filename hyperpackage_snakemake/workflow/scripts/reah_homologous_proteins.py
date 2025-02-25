@@ -2,16 +2,15 @@ import pandas as pd
 from snakemake.script import snakemake
 import re
 from Bio import SeqIO
-from Bio.Seq import Seq
-from Bio.SeqRecord import SeqRecord
 import logging
+import gzip
 
 logger = logging.getLogger()
 
 reah_pattern = re.compile(r"(?:REAH:|reah:|)(\d{5})")
 MAX_HOMOLOGOUS_PROTEINS = snakemake.config["max_homologous_proteins"]
 
-# snakemake.input[0] = "data/{sample}-reahid.txt"
+# snakemake.input = ["data/{sample}-reahid.txt", "utils/swissprot_data.tsv.gz", "utils/swissprot_sequences.fasta.gz"]
 # snakemake.output[0]= "data/{sample}-uniprot_mapped.faa"
 if __name__ == "__main__":
     # load the ReahID
@@ -24,8 +23,8 @@ if __name__ == "__main__":
     logger.info(f"Found Reah ID: {reah_id}.")
 
     # get the matching proteins
-    swissprot_df = pd.read_csv(snakemake.input[1])  # TODO update with swissprot download step
-    matching_sequences = swissprot_df[swissprot_df["REAH ID"] == reah_id]  # TODO update with swissprot download step
+    swissprot_df = pd.read_csv(snakemake.input[1], sep="\t", compression="gzip")
+    matching_sequences = swissprot_df[swissprot_df["Reah ID"].str.contains(reah_id)]
     logger.info(f"Found {len(matching_sequences)} sequences with matching REAH ID.")
 
     # check if none were found
@@ -37,10 +36,19 @@ if __name__ == "__main__":
     logger.info(f"Clipping matching sequences to {MAX_HOMOLOGOUS_PROTEINS}.")
     matching_sequences = matching_sequences.head(MAX_HOMOLOGOUS_PROTEINS)
 
-    # create list of sequences
-    sequences = []
-    for _, row in matching_sequences.iterrows():
-        sequences.append(SeqRecord(Seq(row["sequence"]), id=row["uniprot_id"]))  # TODO update with swissprot download step
+    # find the sequence for each accession ID
+    # painfully inefficient but... ¯\_(ツ)_/¯
+    output_sequences = []
+    with gzip.open(snakemake.input[2], "r") as f:
+        for accession_id in matching_sequences["Entry"]:
+            found_sequence = False
+            for record in SeqIO.parse(accession_id, "fasta"):
+                if accession_id in record.id:
+                    output_sequences.append((accession_id, record.seq))
+                    found_sequence = True
+                    break
+            if not found_sequence:
+                logger.error(f"Did not find sequence for accession ID {accession_id}.")
 
     # write list of sequences to file
-    SeqIO.write(sequences, snakemake.output[0], "fasta")
+    SeqIO.write(output_sequences, snakemake.output[0], "fasta")
