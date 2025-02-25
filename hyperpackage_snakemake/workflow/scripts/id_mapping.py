@@ -15,7 +15,7 @@ def get_uniprot_from_pdb(pdb_id: str) -> str | None:
 def get_uniprot_from_tremble(tremble_id: str) -> str | None:
     pass  # TODO
 
-uniprot_id_pattern = re.compile(r"[OPQ]\d[A-Z0-9]{3}\d|[A-NR-Z]\d([A-Z][A-Z0-9]{2}\d){1,2}(\.\d+)?")
+uniprot_id_pattern = re.compile(r"[OPQ][0-9][A-Z0-9]{3}[0-9]|[A-NR-Z][0-9]([A-Z][A-Z0-9]{2}[0-9]){1,2}")
 
 id_patterns = {
     # "Uniprot/Swiss-Prot": re.compile(r"sp|(.*)|"),
@@ -39,7 +39,7 @@ def classify_id(seq_id: str) -> tuple[str, str] | None:
             return format_name, id_match.group()
         
 def extract_uniprot_id(seq_id: str) -> str | None:
-    id_match = uniprot_id_pattern.match(seq_id)
+    id_match = uniprot_id_pattern.search(seq_id)    
     if id_match is not None:
         id_match = id_match.group()
     return id_match
@@ -48,6 +48,8 @@ def extract_uniprot_id(seq_id: str) -> str | None:
 # snakemake.input[0] = "data/{sample}.faa"
 # snakemake.output[0] = "data/{sample}-uniprot_mapped.faa"
 if __name__ == "__main__":
+    raise NotImplementedError("ID mapping has not been implemented yet. If creating a reference package from proteins, please provided a data/{sample}-uniprot_mapped.faa with proteins that are annotated with UniProt Accession IDs. If you are creating a reference package from a Reah function, please provide a data/{sample}-reahid.txt file.")
+
     # load sequences
     sequences = list(SeqIO.parse(snakemake.input[0], "fasta"))
     for seq in sequences:
@@ -59,12 +61,12 @@ if __name__ == "__main__":
             id_info = classify_id(seq.id)
             if id_info is None:
                 # did not recognize the id type
-                raise RuntimeError("Could not determine id type for: {seq.id}")
+                raise RuntimeError(f"Could not determine id type for: {seq.id}")
             # convert id
             uniprot_id = conversion_functions[id_info[0]](id_info[1])
             if uniprot_id is None:
                 # conversion failed
-                raise RuntimeError("Could not get Uniprot Accession ID for {id_info[0]} ID: {id_info[1]}")
+                raise RuntimeError(f"Could not get Uniprot Accession ID for {id_info[0]} ID: {id_info[1]}")
         
         # set id to uniprot id
         seq.id = uniprot_id

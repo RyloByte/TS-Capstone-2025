@@ -1,5 +1,39 @@
 configfile: "config/config.yaml"
 
+rule download_foldseek_database:
+    conda:
+        "envs/foldseek.yaml"
+    output:
+        "utils/foldseek_spdb/foldseek_spdb",
+    shell:
+        """
+        mkdir -p utils/foldseek_spdb; \
+        cd utils/foldseek_spdb; \
+        foldseek databases Alphafold/Swiss-Prot foldseek_spdb tmp; \
+        """
+
+rule download_swissprot_database:
+    output:
+        "utils/uniprot_spdb/uniprot_sprot.fasta"
+    shell:
+        """
+        mkdir -p utils/uniprot_spdb; \
+        cd utils/uniprot_spdb; \
+        wget https://ftp.uniprot.org/pub/databases/uniprot/knowledgebase/complete/uniprot_sprot.fasta.gz; 
+        gunzip uniprot_sprot.fasta.gz; \
+        """
+
+rule download_swissprot_idmap:
+    output:
+        "utils/uniprot_spdb/uniprotkb_AND_reviewed_true.tsv"
+    shell:
+        """
+        mkdir -p utils/uniprot_spdb; \
+        cd utils/uniprot_spdb; \
+        curl -o uniprotkb_AND_reviewed_true.tsv.gz "https://rest.uniprot.org/uniprotkb/stream?compressed=true&fields=accession%2Crhea%2Cid%2Cprotein_name%2Cxref_alphafolddb%2Cxref_pdb%2Corganism_id&format=tsv&query=(reviewed:true)"; \
+        gunzip uniprotkb_AND_reviewed_true.tsv.gz;
+        """
+
 rule rename_fasta:
     input:
         "data/{sample}.fasta"
@@ -8,9 +42,15 @@ rule rename_fasta:
     shell:
         "mv {input} {output}"
 
+rule rename_mapped_fasta:
+    input:
+        "data/{sample}-uniprot_mapped.fasta"
+    output:
+        "data/{sample}-uniprot_mapped.faa"
+    shell:
+        "mv {input} {output}"
+
 rule id_mapping:
-    conda:
-        "envs/requests.yaml"
     input:
         "data/{sample}.faa"
     output:
@@ -18,21 +58,31 @@ rule id_mapping:
     script:
         "scripts/id_mapping.py"
 
-rule homologous_proteins:
-    conda:
-        "envs/requests.yaml"
+rule reah_homologous_proteins:
     input:
-        "data/{sample}-uniprot_mapped.faa"
+        "data/{sample}-reahid.txt",
+        "data/swissprot.csv"
     output:
-        "data/{sample}-homologous_proteins.faa"
+        "data/{sample}-uniprot_mapped.faa"
     script:
-        "scripts/homologous_proteins.py"
+        "scripts/reah_homologous_proteins.py"
+
+rule ec_homologous_proteins:
+    input:
+        "data/{sample}-ecid.txt",
+        "data/swissprot.csv"
+    output:
+        "data/{sample}-uniprot_mapped.faa"
+    script:
+        "scripts/ec_homologous_proteins.py"
 
 rule structure_clustering:
     conda:
-        "envs/tmalign.yaml"
+        "envs/foldseek.yaml"
     input:
-        "data/{sample}-homologous_proteins.faa"
+        "data/{sample}-homologous_proteins.faa",
+        "utils/foldseek_spdb/foldseek_spdb",
+        "utils/uniprot_spdb/uniprotkb_AND_reviewed_true.tsv"
     output:
         "data/{sample}-structure_clusters.tar.gz"
     script:
@@ -52,7 +102,8 @@ rule treesapp_create:
     conda:
         "envs/treesapp.yaml"
     input:
-        "data/{sample}-sequence_clusters.tar.gz"
+        "data/{sample}-sequence_clusters.tar.gz",
+        "data/swissprot.csv"
     output:
         "result/{sample}-hyperpackage.tar.gz"
     script:
