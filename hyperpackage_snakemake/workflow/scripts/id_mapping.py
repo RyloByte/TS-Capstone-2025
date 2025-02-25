@@ -15,7 +15,7 @@ def get_uniprot_from_pdb(pdb_id: str) -> str | None:
 def get_uniprot_from_tremble(tremble_id: str) -> str | None:
     pass  # TODO
 
-uniprot_id_pattern = re.compile(r"[OPQ]\d[A-Z0-9]{3}\d|[A-NR-Z]\d([A-Z][A-Z0-9]{2}\d){1,2}(\.\d+)?")
+uniprot_id_pattern = re.compile(r"[OPQ][0-9][A-Z0-9]{3}[0-9]|[A-NR-Z][0-9]([A-Z][A-Z0-9]{2}[0-9]){1,2}")
 
 id_patterns = {
     # "Uniprot/Swiss-Prot": re.compile(r"sp|(.*)|"),
@@ -39,7 +39,7 @@ def classify_id(seq_id: str) -> tuple[str, str] | None:
             return format_name, id_match.group()
         
 def extract_uniprot_id(seq_id: str) -> str | None:
-    id_match = uniprot_id_pattern.match(seq_id)
+    id_match = uniprot_id_pattern.search(seq_id)    
     if id_match is not None:
         id_match = id_match.group()
     return id_match
