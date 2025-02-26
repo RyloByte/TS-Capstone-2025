@@ -1,5 +1,7 @@
 configfile: "config/config.yaml"
 
+# utils + database downloads
+
 rule download_foldseek_database:
     conda:
         "envs/foldseek.yaml"
@@ -31,6 +33,8 @@ rule download_swissprot_data:
         mkdir -p utils; \
         curl -o {output} "https://rest.uniprot.org/uniprotkb/stream?compressed=true&fields=accession%2Crhea%2Cid%2Cprotein_name%2Cxref_alphafolddb%2Cxref_pdb%2Corganism_id%2Cec%2Clineage_ids&format=tsv&query=(reviewed:true)";
         """
+
+# user inputs
 
 rule rename_fasta:
     input:
@@ -68,6 +72,8 @@ rule ec_homologous_proteins:
     script:
         "scripts/ec_homologous_proteins.py"
 
+# clustering and treesapp prep
+
 rule structure_clustering:
     conda:
         "envs/foldseek.yaml"
@@ -89,6 +95,8 @@ rule sequence_clustering:
         "data/{sample}-sequence_clusters.tar.gz"
     script:
         "scripts/sequence_clustering.py"
+
+# create functional reference package
 
 rule treesapp_create:
     conda:

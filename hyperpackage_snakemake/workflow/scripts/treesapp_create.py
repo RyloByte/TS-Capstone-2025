@@ -4,12 +4,8 @@ import tarfile
 import tempfile
 import os
 from pathlib import Path
-import logging
 import string
 import random
-
-
-logger = logging.getLogger()
 
 
 def generate_refpkg_name(n: int) -> str:
@@ -18,7 +14,7 @@ def generate_refpkg_name(n: int) -> str:
 
 
 def run_treesapp(input_faa: str, refpkg_name: str, output_dir: str):
-    logger.debug(f"Running TreeSAPP, input: {input_faa} output: {output_dir}")
+    print(f"Running TreeSAPP, input: {input_faa} output: {output_dir}")
 
     result = subprocess.run(
         [
@@ -37,9 +33,9 @@ def run_treesapp(input_faa: str, refpkg_name: str, output_dir: str):
     )
 
     if result.stdout:
-        logger.debug(result.stdout.strip())
+        print(result.stdout.strip())
     if result.stderr:
-        logger.warning(result.stderr.strip())
+        print(result.stderr.strip())
 
     if result.returncode != 0:
         raise RuntimeError(f"Got non-zero return code from TreeSAPP: {result.returncode}")

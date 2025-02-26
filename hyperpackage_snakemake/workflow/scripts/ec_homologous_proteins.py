@@ -18,12 +18,11 @@ if __name__ == "__main__":
         raise RuntimeError(
             f"Did not find EC number in {snakemake.input[0]}, ex. EC:1.2.3.4 or 4.5 etc."
         )
-    ec_number = ec_number.group()
+    ec_number = ec_number.groups()[0]
     print(f"Found EC number: {ec_number}")
 
     # get the matching proteins
     swissprot_df = pd.read_csv(snakemake.input[1], sep="\t", compression="gzip")
-    # number_and_subnumber_matcher = re.compile(rf"(?<!\d|\.){re.escape(ec_number)}")
     matching_sequences = swissprot_df[
         swissprot_df["EC number"].str.contains(rf"(?<!\d|\.){re.escape(ec_number)}", na=False)
     ]
