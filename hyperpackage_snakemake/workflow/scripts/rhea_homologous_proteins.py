@@ -21,19 +21,19 @@ if __name__ == "__main__":
             f"Did not find Rhea ID in {snakemake.input[0]}, ex. RHEA:12345 or 67890"
         )
     rhea_id = rhea_id.group()
-    logger.info(f"Found Rhea ID: {rhea_id}.")
+    logger.info(f"Found Rhea ID: {rhea_id}")
 
     # get the matching proteins
     swissprot_df = pd.read_csv(snakemake.input[1], sep="\t", compression="gzip")
     matching_sequences = swissprot_df[swissprot_df["Rhea ID"].str.contains(rhea_id, na=False, case=False)]
-    logger.info(f"Found {len(matching_sequences)} sequences with matching Rhea ID.")
+    logger.info(f"Found {len(matching_sequences)} sequences with matching Rhea ID")
 
     # check if none were found
     if len(matching_sequences) == 0:
-        raise RuntimeError(f"Did not find any sequences that match Rhea ID {rhea_id}.")
+        raise RuntimeError(f"Did not find any sequences that match Rhea ID {rhea_id}")
 
     # clip to max allowed
-    logger.info(f"Clipping matching sequences to {MAX_HOMOLOGOUS_PROTEINS}.")
+    logger.info(f"Clipping matching sequences to {MAX_HOMOLOGOUS_PROTEINS}")
     matching_sequences = matching_sequences.head(MAX_HOMOLOGOUS_PROTEINS)
 
     # find the sequence for each accession ID
@@ -49,7 +49,7 @@ if __name__ == "__main__":
                 found_sequence = True
                 break
         if not found_sequence:
-            logger.error(f"Did not find sequence for accession ID {accession_id}.")
+            logger.error(f"Did not find sequence for accession ID {accession_id}")
 
     # write list of sequences to file
     SeqIO.write(output_sequences, snakemake.output[0], "fasta")

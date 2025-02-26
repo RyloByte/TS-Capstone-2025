@@ -57,7 +57,7 @@ def extract_uniprot_id(seq_id: str) -> str | None:
 # snakemake.output[0] = "data/{sample}-uniprot_mapped.faa"
 if __name__ == "__main__":
     raise NotImplementedError(
-        "ID mapping has not been implemented yet. If creating a reference package from proteins, please provided a data/{sample}-uniprot_mapped.faa with proteins that are annotated with UniProt Accession IDs. If you are creating a reference package from a Rhea function, please provide a data/{sample}-rhea_id.txt file."
+        "ID mapping has not been implemented yet. If creating a reference package from proteins, please provided a data/{sample}-uniprot_mapped.faa with proteins that are annotated with UniProt Accession IDs. If you are creating a reference package from a Rhea function, please provide a data/{sample}-rhea_id.txt file"
     )
 
     # load sequences
