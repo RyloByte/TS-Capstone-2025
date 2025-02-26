@@ -34,7 +34,7 @@ flowchart TD
     E-->F
     F-->G
     H{{homologous_proteins}}
-    I(["data/{sample}-reahid.txt"])
+    I(["data/{sample}-rheaid.txt"])
     B-->H
     I-->H
     H-->G

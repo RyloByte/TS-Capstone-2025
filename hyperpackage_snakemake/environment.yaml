@@ -7,3 +7,4 @@ dependencies:
   - snakemake
   - pandas
   - requests
+  - biopython

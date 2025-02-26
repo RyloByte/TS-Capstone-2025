@@ -12,65 +12,57 @@ rule download_foldseek_database:
         foldseek databases Alphafold/Swiss-Prot foldseek_spdb tmp; \
         """
 
-rule download_swissprot_database:
+rule download_swissprot_sequences:
     output:
-        "utils/uniprot_spdb/uniprot_sprot.fasta"
+        "utils/swissprot_sequences.fasta.gz"
     shell:
         """
-        mkdir -p utils/uniprot_spdb; \
-        cd utils/uniprot_spdb; \
-        wget https://ftp.uniprot.org/pub/databases/uniprot/knowledgebase/complete/uniprot_sprot.fasta.gz; 
-        gunzip uniprot_sprot.fasta.gz; \
+        echo "Downloading SwissProt sequences. This will take a few minutes..."; \
+        mkdir -p utils; \
+        wget -O {output} https://ftp.uniprot.org/pub/databases/uniprot/knowledgebase/complete/uniprot_sprot.fasta.gz; 
         """
 
-rule download_swissprot_idmap:
+rule download_swissprot_data:
     output:
-        "utils/uniprot_spdb/uniprotkb_AND_reviewed_true.tsv"
+        "utils/swissprot_data.tsv.gz"
     shell:
         """
-        mkdir -p utils/uniprot_spdb; \
-        cd utils/uniprot_spdb; \
-        curl -o uniprotkb_AND_reviewed_true.tsv.gz "https://rest.uniprot.org/uniprotkb/stream?compressed=true&fields=accession%2Crhea%2Cid%2Cprotein_name%2Cxref_alphafolddb%2Cxref_pdb%2Corganism_id&format=tsv&query=(reviewed:true)"; \
-        gunzip uniprotkb_AND_reviewed_true.tsv.gz;
+        echo "Downloading SwissProt data. This will take a few minutes..."; \
+        mkdir -p utils; \
+        curl -o {output} "https://rest.uniprot.org/uniprotkb/stream?compressed=true&fields=accession%2Crhea%2Cid%2Cprotein_name%2Cxref_alphafolddb%2Cxref_pdb%2Corganism_id%2Cec%2Clineage_ids&format=tsv&query=(reviewed:true)";
         """
 
 rule rename_fasta:
     input:
-        "data/{sample}.fasta"
+        "input/{sample}{suffix}.fasta"
     output:
-        "data/{sample}.faa"
-    shell:
-        "mv {input} {output}"
-
-rule rename_mapped_fasta:
-    input:
-        "data/{sample}-uniprot_mapped.fasta"
-    output:
-        "data/{sample}-uniprot_mapped.faa"
+        "input/{sample}{suffix}.faa"
     shell:
         "mv {input} {output}"
 
 rule id_mapping:
     input:
-        "data/{sample}.faa"
+        "input/{sample}.faa"
     output:
         "data/{sample}-uniprot_mapped.faa"
     script:
         "scripts/id_mapping.py"
 
-rule reah_homologous_proteins:
+rule rhea_homologous_proteins:
     input:
-        "data/{sample}-reahid.txt",
-        "data/swissprot.csv"
+        "input/{sample}-rhea_id.txt",
+        "utils/swissprot_data.tsv.gz",
+        "utils/swissprot_sequences.fasta.gz"
     output:
         "data/{sample}-uniprot_mapped.faa"
     script:
-        "scripts/reah_homologous_proteins.py"
+        "scripts/rhea_homologous_proteins.py"
 
 rule ec_homologous_proteins:
     input:
-        "data/{sample}-ecid.txt",
-        "data/swissprot.csv"
+        "input/{sample}-ecnumber.txt",
+        "utils/swissprot_data.tsv.gz",
+        "utils/swissprot_sequences.fasta.gz"
     output:
         "data/{sample}-uniprot_mapped.faa"
     script:
@@ -80,13 +72,13 @@ rule structure_clustering:
     conda:
         "envs/foldseek.yaml"
     input:
-        "data/{sample}-homologous_proteins.faa",
+        "data/{sample}-uniprot_mapped.faa",
         "utils/foldseek_spdb/foldseek_spdb",
-        "utils/uniprot_spdb/uniprotkb_AND_reviewed_true.tsv"
+        "utils/swissprot_data.tsv.gz"
     output:
         "data/{sample}-structure_clusters.tar.gz"
     script:
-        "scripts/homologous_proteins.py"
+        "scripts/structure_clustering.py"
 
 rule sequence_clustering:
     conda:
@@ -103,7 +95,7 @@ rule treesapp_create:
         "envs/treesapp.yaml"
     input:
         "data/{sample}-sequence_clusters.tar.gz",
-        "data/swissprot.csv"
+        "utils/swissprot_data.tsv.gz"
     output:
         "result/{sample}-hyperpackage.tar.gz"
     script:
