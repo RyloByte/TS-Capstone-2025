@@ -38,9 +38,9 @@ rule download_swissprot_data:
 
 rule rename_fasta:
     input:
-        "input/{sample}{suffix}.fasta"
+        "{dir_}/{file_}.fasta"
     output:
-        "input/{sample}{suffix}.faa"
+        "{dir_}/{file_}.faa"
     shell:
         "mv {input} {output}"
 
