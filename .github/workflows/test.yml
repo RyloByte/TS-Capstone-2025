@@ -1,0 +1,23 @@
+name: Run Tests
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v4
+
+      - name: set up miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          activate-environment: snakemake_env
+          environment-file: hyperpackage_snakemake/environment.yaml
+          auto-activate-base: false
+
+      - name: run pytest
+        shell: bash -l {0}
+        working-directory: hyperpackage_snakemake
+        run: pytest -v
