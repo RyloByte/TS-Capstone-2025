@@ -1,13 +1,90 @@
 from snakemake.script import snakemake
 from Bio import SeqIO
 import os
+import tarfile
+import subprocess
+from collections import defaultdict
+import re
 
 
 CLUSTER_THRESHOLD = snakemake.config["sequence_cluster_threshold"]
 
+def parse_cluster_tsv(cluster_file):
+    cluster_map = defaultdict(list)
+    
+    with open(cluster_file, "r") as file:
+        for line in file:
+            cluster_id, sequence_id = line.strip().split("\t")
+            cluster_map[cluster_id].append(sequence_id)
 
-# snakemake.input[0] = "data/{sample}-structure_clusters.tar.gz", fill with {0..n}.faa
+    return cluster_map
+
+def extract_sequences(fasta_file):
+    sequences = {}
+    
+    for record in SeqIO.parse(fasta_file, "fasta"):
+        sequences[record.id] = record
+    
+    return sequences
+
+def write_cluster_files(cluster_map, sequences, output_dir, sample_name):
+    os.makedirs(output_dir, exist_ok=True)
+    
+    for cluster_id, seq_ids in cluster_map.items():
+        output_file = os.path.join(output_dir, f"{sample_name}-{cluster_id}-sequence_cluster.faa")
+        
+        with open(output_file, "w") as f:
+            for seq_id in seq_ids:
+                if seq_id in sequences:
+                    SeqIO.write(sequences[seq_id], f, "fasta")
+
+def extract_tar_gz(archive_path, extract_to="./data/inputs"):
+    with tarfile.open(archive_path, "r:gz") as tar:
+        os.makedirs(extract_to, exist_ok=True)
+        tar.extractall(path=extract_to)
+
+def compress_cluster_files(output_tar_path, cluster_dir):
+    with tarfile.open(output_tar_path, "w:gz") as tar:
+        for file in os.listdir(cluster_dir):
+            if file.endswith(".faa"):
+                file_path = os.path.join(cluster_dir, file)
+                tar.add(file_path, arcname=file)  # Add file to archive
+
+# snakemake.input[0] = "data/{sample}-structure_clusters.tar.gz" , fill with {0..n}.faa
 # snakemake.output[0] = "data/{sample}-sequence_clusters.tar.gz", fill with {0..n}.faa
+
 if __name__ == "__main__":
-    for file in os.listdir(snakemake.input[0]):
-        sequences = SeqIO.parse(os.path.join(snakemake.input[0], file), "fasta")
+    extract_path = "./data/inputs"
+    extract_tar_gz(snakemake.input[0], extract_path)
+
+    output_path = "./data/outputs"
+    os.makedirs(output_path, exist_ok=True)
+
+    tmp_dir = "./data/tmp"
+    os.makedirs(tmp_dir, exist_ok=True)
+
+    tmp_cluster_dir = "./data/cluster_splits"
+    os.makedirs(tmp_dir, exist_ok=True)
+
+    final_output = f"./data"
+
+    for file in os.listdir(extract_path):
+        if file.startswith("._"):
+            continue
+        filepath = os.path.join(extract_path, file)
+        filename = file.rsplit("-", 1)[0]
+        subprocess.run(["mmseqs", "easy-linclust", os.path.join(extract_path, file), f"{output_path}/{filename}-sequence_clusters", tmp_dir])
+        
+        cluster_map = parse_cluster_tsv(f"{output_path}/{filename}-sequence_clusters_cluster.tsv")
+        sequences = extract_sequences(f"{output_path}/{filename}-sequence_clusters_all_seqs.fasta")
+        write_cluster_files(cluster_map, sequences, tmp_cluster_dir, filename)
+    
+
+    filename = snakemake.input[0].rsplit("/")[-1]
+    filename = filename.rsplit("-")[0]
+    final_output = os.path.join(final_output, f"{filename}-sequence_clusters.tar.gz")
+    compress_cluster_files(final_output, tmp_cluster_dir)
+
+
+
+

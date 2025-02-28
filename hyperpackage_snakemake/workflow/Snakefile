@@ -53,6 +53,8 @@ rule id_mapping:
         "scripts/id_mapping.py"
 
 rule rhea_homologous_proteins:
+    conda:
+        "envs/foldseek.yaml"
     input:
         "input/{sample}-rhea_id.txt",
         "utils/swissprot_data.tsv.gz",
