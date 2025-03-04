@@ -6,6 +6,8 @@ All the commands in this readme assume working directory of `hyperpackage_create
 2. Create conda environment with `conda env create -f environment.yaml`
 3. Activate environment with `conda activate snakemake_env`
 
+Update conda environment with `conda env update --file environment.yaml`
+
 # Usage:
 
 1. Place a `.fasta` or `.faa` file in `data/`, ex. `data/DsrAB.faa`
