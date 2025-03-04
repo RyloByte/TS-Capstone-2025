@@ -119,3 +119,6 @@ If you are making a scenario for a workflow that will fail, it will:
 
 When you have the conda environment activated and you are in the correct working directory you can run all tests by
 running `pytest`.
+
+You can run tests in parallel with `pytest -n auto`. You could go to funky town if you have a situation like you have
+not downloaded the SwissProt DB, and then you have multiple tests wanting to download it at once. 
