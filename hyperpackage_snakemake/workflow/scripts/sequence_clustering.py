@@ -33,7 +33,7 @@ def write_cluster_files(cluster_map, sequences, output_dir, sample_name):
     for cluster_id, seq_ids in cluster_map.items():
         output_file = os.path.join(output_dir, f"{sample_name}-{cluster_id}-sequence_cluster.faa")
         
-        with open(output_file, "w") as f:
+        with open(output_file, "w", newline="\n") as f:
             for seq_id in seq_ids:
                 if seq_id in sequences:
                     SeqIO.write(sequences[seq_id], f, "fasta")

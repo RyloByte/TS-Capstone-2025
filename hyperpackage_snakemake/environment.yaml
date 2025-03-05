@@ -8,3 +8,6 @@ dependencies:
   - pandas
   - requests
   - biopython
+  - pip
+  - pip:
+      - pytest-xdist

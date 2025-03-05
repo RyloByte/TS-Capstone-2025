@@ -6,6 +6,8 @@ All the commands in this readme assume working directory of `hyperpackage_create
 2. Create conda environment with `conda env create -f environment.yaml`
 3. Activate environment with `conda activate snakemake_env`
 
+Update conda environment with `conda env update --file environment.yaml`
+
 # Usage:
 
 1. Place a `.fasta` or `.faa` file in `data/`, ex. `data/DsrAB.faa`
@@ -117,3 +119,6 @@ If you are making a scenario for a workflow that will fail, it will:
 
 When you have the conda environment activated and you are in the correct working directory you can run all tests by
 running `pytest`.
+
+You can run tests in parallel with `pytest -n auto`. You could go to funky town if you have a situation like you have
+not downloaded the SwissProt DB, and then you have multiple tests wanting to download it at once. 

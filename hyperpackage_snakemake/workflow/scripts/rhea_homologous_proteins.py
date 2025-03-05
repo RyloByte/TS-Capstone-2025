@@ -50,4 +50,5 @@ if __name__ == "__main__":
             print(f"Did not find sequence for accession ID {accession_id}")
 
     # write list of sequences to file
-    SeqIO.write(output_sequences, snakemake.output[0], "fasta")
+    with open(snakemake.output[0], "w", newline="\n") as f:
+        SeqIO.write(output_sequences, f, "fasta")

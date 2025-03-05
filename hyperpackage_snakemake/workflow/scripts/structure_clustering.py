@@ -54,7 +54,7 @@ def create_cluster_output(all_seqs_fasta, output_tar_file):
         faa_files.append(output_file)
         # Write sequences to the file
         seqs = clusters[cluster_id]
-        with open(output_file, "w") as f:
+        with open(output_file, "w", newline="\n") as f:
             SeqIO.write(seqs, f, "fasta")
     
     with tarfile.open(output_tar_file, "w:gz") as tar:

@@ -61,15 +61,21 @@ class WorkflowRunner:
         shutil.copytree(scenario_path, self.temp_wd, dirs_exist_ok=True)
         # copy things like config from main directory if not present in scenario
         for item in self.link_if_missing:
-            if not os.path.exists(os.path.join(self.temp_wd, item)):
+            temp_item_path = os.path.join(self.temp_wd, item)
+            outside_item_path = os.path.join(self.original_wd, item)
+            if not os.path.exists(temp_item_path):
                 if item == "config":
                     # use example config values
-                    self.copy_example_config(os.path.join(self.original_wd, item), os.path.join(self.temp_wd, item))
+                    self.copy_example_config(outside_item_path, temp_item_path)
                 else:
                     # just link the directory
+                    # need to create it if there isn't one at the top level
+                    if not os.path.exists(outside_item_path):
+                        print(f"{outside_item_path} not found, creating...")
+                        os.makedirs(outside_item_path, exist_ok=True)
                     os.symlink(
-                        os.path.join(self.original_wd, item),
-                        os.path.join(self.temp_wd, item),
+                        outside_item_path,
+                        temp_item_path,
                     )
         # link workflow dirs
         for item in self.link:
