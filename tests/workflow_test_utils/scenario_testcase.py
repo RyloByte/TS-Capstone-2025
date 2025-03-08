@@ -68,12 +68,15 @@ class ScenarioTestCase(IsolatedWorkingDirTestCase):
             external_item_path = item if os.path.isabs(item) else os.path.join(self.original_wd, item)
             internal_item_path = os.path.join(self.test_path, os.path.basename(item))
             if not os.path.exists(internal_item_path):
-                if strategy == "copy":
+                if strategy == "link-make" or strategy == "copy-make":
+                    if not os.path.exists(external_item_path):
+                        os.makedirs(external_item_path, exist_ok=True)
+                if strategy == "copy" or strategy == "copy-make":
                     if os.path.isdir(external_item_path):
                         shutil.copytree(external_item_path, internal_item_path, dirs_exist_ok=True)
                     else:
                         shutil.copy(external_item_path, internal_item_path)
-                elif strategy == "link":
+                elif strategy == "link" or strategy == "link-make":
                     os.symlink(external_item_path, internal_item_path, target_is_directory=os.path.isdir(external_item_path))
                 elif callable(strategy):
                     strategy(external_item_path, internal_item_path)

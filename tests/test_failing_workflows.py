@@ -10,7 +10,7 @@ class TestFailingWorkflows(ScenarioTestCase, unittest.TestCase):
     scenarios_dir = Path(__file__).parent / "failing_scenarios"
     check_strategy = ScenarioTestCase.OutputCheckOptions.NO_CHECK
     link_items = {
-        Path(__file__).parent.parent / "utils": "link",
+        Path(__file__).parent.parent / "utils": "link-make",
         Path(__file__).parent.parent / "config": copy_config,
         Path(__file__).parent.parent / "workflow": "link"
     }
