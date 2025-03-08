@@ -34,6 +34,6 @@ jobs:
             echo "utils/ cache hit, running tests in parallel"
             pytest -n auto
           else
-            echo "utils/ cache miss, downloading utils and running tests sequentially
+            echo "utils/ cache miss, downloading utils and running tests sequentially"
             pytest
           fi
