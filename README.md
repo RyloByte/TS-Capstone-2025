@@ -1,7 +1,5 @@
 # Installation:
 
-All the commands in this readme assume working directory of `hyperpackage_create/`.
-
 1. Clone repository/download workflow code
 2. Create conda environment with `conda env create -f environment.yaml`
 3. Activate environment with `conda activate snakemake_env`
