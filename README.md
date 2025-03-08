@@ -99,7 +99,7 @@ tests/expected_outputs/rhea_test/
 |   |-- whatever-uniprot_mapped.faa
 ```
 
-If `config` and `util` directories are not provided, they will be linked from the main `hyperpackage_snakemake/`
+If `config` and `util` directories are not provided, they will be linked from the main
 directory. If your rule depends on a config value, it is best to include a config in your scenario so that it runs as
 expected every time.
 
