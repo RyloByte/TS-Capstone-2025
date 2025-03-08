@@ -1,6 +1,10 @@
 name: Run Tests
 
-on: [push, pull_request]
+on:
+  pull_request:
+  push:
+    branches:
+      - master
 
 jobs:
   test:
@@ -24,8 +28,6 @@ jobs:
           path: |
             ./utils
           key: fixed-key
-          restore-keys: |
-            fixed-key
 
       - name: run pytest
         shell: bash -l {0}
