@@ -54,13 +54,9 @@ class ScenarioTestCase(IsolatedWorkingDirTestCase):
     @classmethod
     def generate_test(cls, scenario_name, initial_state_path, expected_state_path):
         def test_func(self):
-            a = list(os.listdir(os.getcwd()))
             self.copy_initial_state(initial_state_path)
-            x = list(os.listdir(os.getcwd()))
             self.perform_linking()
-            y = list(os.listdir(os.getcwd()))
             self.run_scenario(scenario_name, expected_state_path)
-            z = list(os.listdir(os.getcwd()))
             self.check_final_state(expected_state_path)
         return test_func
 
@@ -69,8 +65,8 @@ class ScenarioTestCase(IsolatedWorkingDirTestCase):
 
     def perform_linking(self):
         for item, strategy in self.link_items.items():
-            external_item_path = os.path.join(self.original_wd, item)
-            internal_item_path = os.path.join(self.test_path, item)
+            external_item_path = item if os.path.isabs(item) else os.path.join(self.original_wd, item)
+            internal_item_path = os.path.join(self.test_path, os.path.basename(item))
             if not os.path.exists(internal_item_path):
                 if strategy == "copy":
                     if os.path.isdir(external_item_path):
