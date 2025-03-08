@@ -24,6 +24,8 @@ jobs:
           path: |
             ./utils
           key: fixed-key
+          restore-keys: |
+            fixed-key
 
       - name: run pytest
         shell: bash -l {0}
