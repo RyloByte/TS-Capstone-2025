@@ -1,7 +1,0 @@
-name: mmseqs2_env
-channels:
-  - bioconda
-  - conda-forge
-dependencies:
-  - python=3.12
-  - mmseqs2

@@ -1,0 +1,110 @@
+configfile: "config/config.yaml"
+
+# utils + database downloads
+
+rule download_foldseek_database:
+    conda:
+        "envs/foldseek.yaml"
+    output:
+        "utils/foldseek_spdb/foldseek_spdb",
+    shell:
+        """
+        mkdir -p utils/foldseek_spdb; \
+        cd utils/foldseek_spdb; \
+        foldseek databases Alphafold/Swiss-Prot foldseek_spdb tmp; \
+        """
+
+rule download_swissprot_sequences:
+    output:
+        "utils/swissprot_sequences.fasta.gz"
+    shell:
+        """
+        echo "Downloading SwissProt sequences. This will take a few minutes..."; \
+        mkdir -p utils; \
+        wget -O {output} https://ftp.uniprot.org/pub/databases/uniprot/knowledgebase/complete/uniprot_sprot.fasta.gz; 
+        """
+
+rule download_swissprot_data:
+    output:
+        "utils/swissprot_data.tsv.gz"
+    shell:
+        """
+        echo "Downloading SwissProt data. This will take a few minutes..."; \
+        mkdir -p utils; \
+        curl -o {output} "https://rest.uniprot.org/uniprotkb/stream?compressed=true&fields=accession%2Crhea%2Cid%2Cprotein_name%2Cxref_alphafolddb%2Cxref_pdb%2Corganism_id%2Cec%2Clineage_ids&format=tsv&query=(reviewed:true)";
+        """
+
+# user inputs
+
+rule rename_fasta:
+    input:
+        "{dir_}/{file_}.fasta"
+    output:
+        "{dir_}/{file_}.faa"
+    shell:
+        "mv {input} {output}"
+
+rule id_mapping:
+    input:
+        "input/{sample}.faa"
+    output:
+        "data/{sample}-uniprot_mapped.faa"
+    script:
+        "scripts/id_mapping.py"
+
+rule rhea_homologous_proteins:
+    input:
+        "input/{sample}-rhea_id.txt",
+        "utils/swissprot_data.tsv.gz",
+        "utils/swissprot_sequences.fasta.gz"
+    output:
+        "data/{sample}-uniprot_mapped.faa"
+    script:
+        "scripts/rhea_homologous_proteins.py"
+
+rule ec_homologous_proteins:
+    input:
+        "input/{sample}-ecnumber.txt",
+        "utils/swissprot_data.tsv.gz",
+        "utils/swissprot_sequences.fasta.gz"
+    output:
+        "data/{sample}-uniprot_mapped.faa"
+    script:
+        "scripts/ec_homologous_proteins.py"
+
+# clustering and treesapp prep
+
+rule structure_clustering:
+    conda:
+        "envs/foldseek.yaml"
+    input:
+        "data/{sample}-uniprot_mapped.faa",
+        "utils/foldseek_spdb/foldseek_spdb",
+        "utils/swissprot_data.tsv.gz"
+    output:
+        "data/{sample}-structure_clusters.tar.gz"
+    script:
+        "scripts/structure_clustering.py"
+
+rule sequence_clustering:
+    conda:
+        "envs/mmseqs2.yaml"
+    input:
+        "data/{sample}-structure_clusters.tar.gz"
+    output:
+        "data/{sample}-sequence_clusters.tar.gz"
+    script:
+        "scripts/sequence_clustering.py"
+
+# create functional reference package
+
+rule treesapp_create:
+    conda:
+        "envs/treesapp.yaml"
+    input:
+        "data/{sample}-sequence_clusters.tar.gz",
+        "utils/swissprot_data.tsv.gz"
+    output:
+        "result/{sample}-hyperpackage.tar.gz"
+    script:
+        "scripts/treesapp_create.py"

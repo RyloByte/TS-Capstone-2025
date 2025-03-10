@@ -1,6 +1,0 @@
-structure_cluster_threshold: 0.6
-sequence_cluster_threshold: 0.7
-max_homologous_proteins: 100
-foldseek_eval_threshold: 0.001
-foldseek_num_iterations: 3
-foldseek_max_seqs: 100

@@ -1,3 +1,10 @@
+.snakemake
+/data/
+/result/
+/utils/
+/input/
+/config/*
+!/config/**/*.example
 */foldseek_output/fs*
 */structures/AF*.pdb
 

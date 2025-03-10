@@ -1,7 +1,0 @@
-.snakemake
-/data/
-/result/
-/utils/
-/input/
-/config/*
-!/config/**/*.example
