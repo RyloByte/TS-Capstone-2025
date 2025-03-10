@@ -57,15 +57,18 @@ flowchart TD
 
 ## Creating a test
 
-The tests for this project are configured to run dynamically based on things in the directories
+Scenario-based tests are generated in
 
 - `tests/successful_scenarios/`
-- `tests/failure_scenarios/`
-- `tests/expected_outputs/`
+- `tests/failing_scenarios/`
 
-To create a test create a folder in `tests/successful_scenarios/` (or `tests/failure_scenarios/`) with the name of your
-test, and a folder with the same name in `tests/expected_outputs/` with the expected output files (if you are making a
-failing test you can use empty files since they will just be used to request outputs).
+Each scenario should contain the directories `intial_state/` and `final_state/`. Snakemake will work in directory with
+the `workflow/` directory, as well as the top level `utils/` and `config/` directories if they are not specified in the
+scenario (`.example` files in the global `config/` directory will be renamed). The test will run snakemake requesting
+all the files in `final_state/`. `final_state/` does not need to include the files that are in `initial_state`. For
+`tests/successful_scenarios/` snakemake must exit normally, and the contents of the `final_state/` directory will be
+checked for and compared for accuracy. For `tests/failing_scenarios/` snakemake must *not* exit normally. The files in
+`final_state` will be requested, but not tested against.
 
 Let's make a test for the following rule:
 
@@ -81,18 +84,18 @@ rule rhea_homologous_proteins:
         "scripts/rhea_homologous_proteins.py"
 ```
 
-We can make `tests/successful_scenarios/rhea_test/` and fill it with the necessary inputs:
+We can make the inputs:
 
 ```
-tests/successful_scenarios/rhea_test/
+tests/successful_scenarios/rhea_test/initial_state/
 |-- input/
 |   |-- whatever-rhea_id.txt
 ```
 
-and `tests/expected_outputs/rhea_test/` with the files we want to request and check for accuracy:
+and the outputs:
 
 ```
-tests/expected_outputs/rhea_test/
+tests/successful_scenarios/rhea_test/final_state/
 |-- data/
 |   |-- whatever-uniprot_mapped.faa
 ```
@@ -101,22 +104,8 @@ If `config` and `util` directories are not provided, they will be linked from th
 directory. If your rule depends on a config value, it is best to include a config in your scenario so that it runs as
 expected every time.
 
-When a test runs it will:
-
-1. Call snakemake requesting all the files in your expected output
-2. Make sure snakemake exited normally
-3. Check that each output file is identical to the expected one
-
-If you are making a scenario for a workflow that will fail, it will:
-
-1. Call snakemake requesting all the files in your expected output (these can be empty files)
-2. Make sure snakemake *did not* exit normally
-3. Make sure none of the output files were actually produced
-
 ## Running tests
 
-When you have the conda environment activated and you are in the correct working directory you can run all tests by
-running `pytest`.
-
-You can run tests in parallel with `pytest -n auto`. You could go to funky town if you have a situation like you have
-not downloaded the SwissProt DB, and then you have multiple tests wanting to download it at once. 
+You can run all tests with `pytest`, or with multiple cores `pytest -n auto`. Things can get funky with the multi-core
+tests if you have a situation like you have not already downloaded something in `utils/` and now several tasks are going
+to try to do it at once.
