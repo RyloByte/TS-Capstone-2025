@@ -7,21 +7,21 @@ from collections import defaultdict
 import re
 
 
-MIN_SEQ_ID = snakemake.config["min_seq_id"]
-MIN_SEQ_COV = snakemake.config["min_seq_cov"]
-COV_MODE = snakemake.config["cov_mode"]
-K_LENGTH = snakemake.config["k_length"]
-KMER_PER_SEQ = snakemake.config["kmer_per_seq"]
-THREADS = snakemake.config["threads"]
-SHUFFLE = snakemake.config["shuffle"]
-HASH_SHIFT = snakemake.config["hash_shift"]
-REMOVE_TMP_FILES = snakemake.config["remove_tmp_files"]
-FORCE_REUSE_TMP = snakemake.config["force_reuse_tmp"]
-ALIGNMENT_MODE = snakemake.config["alignment_mode"]
-SIMILARITY_TYPE = snakemake.config["similarity_type"]
-REALIGN = snakemake.config["realign"]
-SPACED_KMER_MODE = snakemake.config["spaced_kmer_mode"]
-REMOVE_OUTPUT_FILES = snakemake.config["remove_output_files"]
+MIN_SEQ_ID = snakemake.config["sequence_clustering"]["min_seq_id"]
+MIN_SEQ_COV = snakemake.config["sequence_clustering"]["min_seq_cov"]
+COV_MODE = snakemake.config["sequence_clustering"]["cov_mode"]
+K_LENGTH = snakemake.config["sequence_clustering"]["k_length"]
+KMER_PER_SEQ = snakemake.config["sequence_clustering"]["kmer_per_seq"]
+THREADS = snakemake.config["sequence_clustering"]["threads"]
+SHUFFLE = snakemake.config["sequence_clustering"]["shuffle"]
+HASH_SHIFT = snakemake.config["sequence_clustering"]["hash_shift"]
+REMOVE_TMP_FILES = snakemake.config["sequence_clustering"]["remove_tmp_files"]
+FORCE_REUSE_TMP = snakemake.config["sequence_clustering"]["force_reuse_tmp"]
+ALIGNMENT_MODE = snakemake.config["sequence_clustering"]["alignment_mode"]
+SIMILARITY_TYPE = snakemake.config["sequence_clustering"]["similarity_type"]
+REALIGN = snakemake.config["sequence_clustering"]["realign"]
+SPACED_KMER_MODE = snakemake.config["sequence_clustering"]["spaced_kmer_mode"]
+REMOVE_OUTPUT_FILES = snakemake.config["sequence_clustering"]["remove_output_files"]
 
 
 def parse_cluster_tsv(cluster_file):
