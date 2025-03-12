@@ -100,8 +100,8 @@ rule treesapp_create:
     conda:
         "envs/treesapp.yaml"
     input:
-        "data/{sample}-sequence_clusters.tar.gz",
-        "utils/swissprot_data.tsv.gz"
+        "utils/swissprot_data.tsv.gz",
+        "data/{sample}-sequence_clusters.tar.gz"
     output:
         "result/{sample}-hyperpackage.tar.gz"
     script:

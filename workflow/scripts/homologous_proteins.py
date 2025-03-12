@@ -10,7 +10,8 @@ import re
 rhea_pattern = re.compile(r"\d{5}")
 ec_pattern = re.compile(r"(\d+)(?:\.(\d+)){0,2}(?:\.(n?\d+))?")
 
-MAX_HOMOLOGOUS_PROTEINS = snakemake.config["max_homologous_proteins"]
+config = snakemake.config["homologous_lookup"]
+MAX_HOMOLOGOUS_PROTEINS = config["max_proteins"]
 
 def get_rhea_matching_proteins(rhea_id: str, swissprot_df: pd.DataFrame) -> pd.DataFrame:
     return swissprot_df[swissprot_df["Rhea ID"].str.contains(rhea_id, na=False, case=False)]

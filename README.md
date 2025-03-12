@@ -28,13 +28,13 @@ After updating the project, update potential dependency changes with `conda env 
 # Usage:
 
 With snakemake you request a file(s), and the workflow will attempt to use available files and run steps to create that
-file(s). A typical example in this project would be `snakemake --use-conda ec_3.4.1.2-hyperpackage.tar.gz` to create a
+file(s). A typical example in this project would be `snakemake --use-conda result/ec_3.4.1.2-hyperpackage.tar.gz` to create a
 hyperpackage from the EC number 3.4.1.2. The `--use-conda` flag is required in this workflow for intermediate tools to
 work.
 
 ## Hyperpackage create process
 
-The following flowchart describes the workflow. If you run the workflow requesting a file like `snakemake --use-conda test-hyperpackage.tar.gz`,
+The following flowchart describes the workflow. If you run the workflow requesting a file like `snakemake --use-conda result/test-hyperpackage.tar.gz`,
 snakemake will try to produce it using the `TreeSAPP create` step, and check if the file `test-sequence_clusters.tar.gz`
 exists, and if not create it using the `Sequence Clustering` step and so on. You can request or provide a file from any
 point in the process, and snakemake will attempt to reuse existing intermediate files. 
@@ -74,8 +74,8 @@ flowchart TD
 
 The following flowchart describes ways users might interact with the workflow. A `.faa` file with functionally
 homologous proteins can be generated with either a Rhea activity ID or EC number. These values can be passed by
-requesting something like `snakemake --use-conda ec_1.1.1.1-hyperpackage.tar.gz`, which will eventually request a
-`ec_1.1.1.1-uinprot_mapped.faa` file. Rhea IDs are supported in the format `rhea_XXXXX`, and EC numbers in the format
+requesting something like `snakemake --use-conda result/ec_1.1.1.1-hyperpackage.tar.gz`, which will eventually request a
+`data/ec_1.1.1.1-uinprot_mapped.faa` file. Rhea IDs are supported in the format `rhea_XXXXX`, and EC numbers in the format
 `ec_X.X.X.X`, with more general forms like `ec_X.X` also being valid. There is a config option for capping the number of
 homologous proteins gathered. 
 
