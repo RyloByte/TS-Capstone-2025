@@ -40,7 +40,7 @@ rule rename_fasta:
     input:
         "{file_}.fasta"
     output:
-        "{file_}.faa"
+        temp("{file_}.faa")
     shell:
         "cp {input} {output}"
 
