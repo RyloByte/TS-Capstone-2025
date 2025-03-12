@@ -7,7 +7,22 @@ from collections import defaultdict
 import re
 
 
-CLUSTER_THRESHOLD = snakemake.config["sequence_cluster_threshold"]
+MIN_SEQ_ID = snakemake.config["sequence_clustering"]["min_seq_id"]
+MIN_SEQ_COV = snakemake.config["sequence_clustering"]["min_seq_cov"]
+COV_MODE = snakemake.config["sequence_clustering"]["cov_mode"]
+K_LENGTH = snakemake.config["sequence_clustering"]["k_length"]
+KMER_PER_SEQ = snakemake.config["sequence_clustering"]["kmer_per_seq"]
+THREADS = snakemake.config["sequence_clustering"]["threads"]
+SHUFFLE = snakemake.config["sequence_clustering"]["shuffle"]
+HASH_SHIFT = snakemake.config["sequence_clustering"]["hash_shift"]
+REMOVE_TMP_FILES = snakemake.config["sequence_clustering"]["remove_tmp_files"]
+FORCE_REUSE_TMP = snakemake.config["sequence_clustering"]["force_reuse_tmp"]
+ALIGNMENT_MODE = snakemake.config["sequence_clustering"]["alignment_mode"]
+SIMILARITY_TYPE = snakemake.config["sequence_clustering"]["similarity_type"]
+REALIGN = snakemake.config["sequence_clustering"]["realign"]
+SPACED_KMER_MODE = snakemake.config["sequence_clustering"]["spaced_kmer_mode"]
+REMOVE_OUTPUT_FILES = snakemake.config["sequence_clustering"]["remove_output_files"]
+
 
 def parse_cluster_tsv(cluster_file):
     cluster_map = defaultdict(list)
@@ -33,7 +48,7 @@ def write_cluster_files(cluster_map, sequences, output_dir, sample_name):
     for cluster_id, seq_ids in cluster_map.items():
         output_file = os.path.join(output_dir, f"{sample_name}-{cluster_id}-sequence_cluster.faa")
         
-        with open(output_file, "w", newline="\n") as f:
+        with open(output_file, "w") as f:
             for seq_id in seq_ids:
                 if seq_id in sequences:
                     SeqIO.write(sequences[seq_id], f, "fasta")
@@ -58,23 +73,41 @@ if __name__ == "__main__":
     extract_tar_gz(snakemake.input[0], extract_path)
 
     output_path = "./data/outputs"
-    os.makedirs(output_path, exist_ok=True)
-
     tmp_dir = "./data/tmp"
-    os.makedirs(tmp_dir, exist_ok=True)
-
     tmp_cluster_dir = "./data/cluster_splits"
-    os.makedirs(tmp_dir, exist_ok=True)
-
     final_output = f"./data"
 
     for file in os.listdir(extract_path):
+        os.makedirs(output_path, exist_ok=True)
+        os.makedirs(tmp_dir, exist_ok=True)
+        os.makedirs(tmp_cluster_dir, exist_ok=True)
+
         if file.startswith("._"):
             continue
         filepath = os.path.join(extract_path, file)
         filename = file.rsplit("-", 1)[0]
-        subprocess.run(["mmseqs", "easy-linclust", os.path.join(extract_path, file), f"{output_path}/{filename}-sequence_clusters", tmp_dir])
-        
+        # subprocess.run(["mmseqs", "easy-linclust", os.path.join(extract_path, file), f"{output_path}/{filename}-sequence_clusters", tmp_dir, "--min-seq-id", f"{MIN_SEQ_ID}", "--min-seq-cov", f"{MIN_SEQ_COV}", "--cov-mode", f"{COV_MODE}", "-k", f"{K_LENGTH}", "--threads", f"{THREADS}", "shuffle", f"{SHUFFLE}"])
+        subprocess.run([
+                        "mmseqs", "easy-linclust", 
+                        os.path.join(extract_path, file), 
+                        f"{output_path}/{filename}-sequence_clusters", 
+                        tmp_dir,
+                        "--min-seq-id", f"{MIN_SEQ_ID}",
+                        "-c", f"{MIN_SEQ_COV}",
+                        "--cov-mode", f"{COV_MODE}",
+                        "-k", f"{K_LENGTH}",
+                        "--kmer-per-seq", f"{KMER_PER_SEQ}",
+                        "--threads", f"{THREADS}",
+                        "--shuffle", f"{SHUFFLE}",
+                        # "--hash-shift", f"{HASH_SHIFT}",
+                        "--remove-tmp-files", f"{REMOVE_TMP_FILES}",
+                        "--force-reuse", f"{FORCE_REUSE_TMP}",
+                        "--alignment-mode", f"{ALIGNMENT_MODE}",
+                        "--similarity-type", f"{SIMILARITY_TYPE}",
+                        "--realign", f"{REALIGN}",
+                        "--spaced-kmer-mode", f"{SPACED_KMER_MODE}"
+                    ])
+
         cluster_map = parse_cluster_tsv(f"{output_path}/{filename}-sequence_clusters_cluster.tsv")
         sequences = extract_sequences(f"{output_path}/{filename}-sequence_clusters_all_seqs.fasta")
         write_cluster_files(cluster_map, sequences, tmp_cluster_dir, filename)
@@ -84,6 +117,11 @@ if __name__ == "__main__":
     filename = filename.rsplit("-")[0]
     final_output = os.path.join(final_output, f"{filename}-sequence_clusters.tar.gz")
     compress_cluster_files(final_output, tmp_cluster_dir)
+
+    subprocess.run(f"rm -rf {tmp_dir} {tmp_cluster_dir} {extract_path}", shell=True, executable="/bin/bash")
+    if REMOVE_OUTPUT_FILES:
+        subprocess.run(f"rm -rf {output_path}", shell=True, executable="/bin/bash")
+
 
 
 
