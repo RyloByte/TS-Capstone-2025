@@ -38,11 +38,11 @@ rule download_swissprot_data:
 
 rule rename_fasta:
     input:
-        "{dir_}/{file_}.fasta"
+        "{file_}.fasta"
     output:
-        "{dir_}/{file_}.faa"
+        "{file_}.faa"
     shell:
-        "mv {input} {output}"
+        "cp {input} {output}"
 
 rule id_mapping:
     input:
@@ -54,23 +54,21 @@ rule id_mapping:
 
 rule rhea_homologous_proteins:
     input:
-        "input/{sample}-rhea_id.txt",
         "utils/swissprot_data.tsv.gz",
         "utils/swissprot_sequences.fasta.gz"
     output:
-        "data/{sample}-uniprot_mapped.faa"
+        "data/rhea_{number}-uniprot_mapped.faa"
     script:
-        "scripts/rhea_homologous_proteins.py"
+        "scripts/homologous_proteins.py"
 
 rule ec_homologous_proteins:
     input:
-        "input/{sample}-ecnumber.txt",
         "utils/swissprot_data.tsv.gz",
         "utils/swissprot_sequences.fasta.gz"
     output:
-        "data/{sample}-uniprot_mapped.faa"
+        "data/ec_{number}-uniprot_mapped.faa"
     script:
-        "scripts/ec_homologous_proteins.py"
+        "scripts/homologous_proteins.py"
 
 # clustering and treesapp prep
 
