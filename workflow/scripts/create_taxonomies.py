@@ -1,6 +1,8 @@
 import pandas as pd
 import sys
 import os
+import gzip
+
 
 def convert_lineage(lineage_str):
     rank_map = {
@@ -46,9 +48,8 @@ def convert_lineage(lineage_str):
     
     return ";".join(rank_dict.values()) + ";"
 
-def process_tsv(input_file):
-    df = pd.read_csv(input_file, sep="\t")
-    print("working")
+def process_tsv(input_file, dataframe):
+    df = dataframe
     
     last_column = df.columns[-1]
     df["formatted_lineage"] = df[last_column].apply(lambda x: convert_lineage(str(x)))
@@ -61,5 +62,11 @@ def process_tsv(input_file):
     df.to_csv(output_file, sep="\t", index=False, header=None)
     print(f"Processed file saved as: {output_file}")
 
+def process_gz_tsv(gz_file):
+    with gzip.open(gz_file, "rt") as f:  # Open as text mode
+        df = pd.read_csv(f, sep="\t")
+        return df
+
 if __name__ == "__main__":
-    process_tsv(snakemake.input[0])
+    df = process_gz_tsv(snakemake.input[0])
+    process_tsv(snakemake.input[0], df)
