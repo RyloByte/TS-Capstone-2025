@@ -86,7 +86,7 @@ rule structure_clustering:
         "scripts/structure_clustering.py"
 
 rule sequence_clustering:
-    conda:
+    conda: 
         "envs/mmseqs2.yaml"
     input:
         "data/{sample}-structure_clusters.tar.gz"
