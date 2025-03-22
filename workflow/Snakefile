@@ -34,6 +34,15 @@ rule download_swissprot_data:
         curl -o {output} "https://rest.uniprot.org/uniprotkb/stream?compressed=true&fields=accession%2Crhea%2Cid%2Cprotein_name%2Cxref_alphafolddb%2Cxref_pdb%2Corganism_id%2Cec%2Clineage_ids&format=tsv&query=(reviewed:true)";
         """
 
+rule create_swissprot_taxonomies:
+    input:
+        "utils/swissprot_data.tsv.gz"
+    output:
+        "utils/swissprot_taxonomies.tsv"
+    script:
+        "scripts/create_taxonomies.py"
+    
+
 # user inputs
 
 rule rename_fasta:
