@@ -62,7 +62,12 @@ if __name__ == "__main__":
 
 
     name_generator = ref_pkg_name_generator(ref_pkg_name_length)
-    hyper_package_manifest: dict = {"ref_pkgs": []}
+    hyper_package_manifest = {"ref_pkgs": []}
+    expected_ending = "-hyperpackage.tar.gz"
+    if not hyperpackage_output.name.endswith(expected_ending):
+        print("Got an unexpected hyperpackage output name, can't determine activity number used to create it")
+    else:
+        hyper_package_manifest["activity_number"] = hyperpackage_output.name[:-len(expected_ending)]
 
     # create a temporary directory for the output
     with tempfile.TemporaryDirectory() as output_dir:
