@@ -7,3 +7,5 @@ foldseek_num_iterations: 3
 foldseek_max_seqs: 100
 treesapp_create:
   extra_args: ""
+  ref_pkg_name_length: 6
+  show_treesapp_output: False

@@ -101,6 +101,7 @@ rule treesapp_create:
         "envs/treesapp.yaml"
     input:
         "utils/swissprot_data.tsv.gz",
+        "utils/swissprot_taxonomies.tsv",
         "data/{sample}-sequence_clusters.tar.gz"
     output:
         "result/{sample}-hyperpackage.tar.gz"
