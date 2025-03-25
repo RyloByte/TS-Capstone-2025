@@ -3,6 +3,8 @@ import sys
 import os
 import gzip
 
+TAXONOMY_HEADERS = snakemake.config["utils"]["taxonomy_headers"]
+
 
 def convert_lineage(lineage_str):
     rank_map = {
@@ -48,25 +50,15 @@ def convert_lineage(lineage_str):
     
     return ";".join(rank_dict.values()) + ";"
 
-def process_tsv(input_file, dataframe):
-    df = dataframe
-    
+def process_tsv(input_filepath, header=None):
+    df = pd.read_csv(input_filepath, sep='\t', compression='infer')
+
     last_column = df.columns[-1]
     df["formatted_lineage"] = df[last_column].apply(lambda x: convert_lineage(str(x)))
     df = df[["Entry", "formatted_lineage"]]
     
-    output_name = input_file.split("/", maxsplit=1)[1]
-    output_name = f"utils/{output_name.split("_")[0]}"
-
-    output_file = f"{output_name}_taxonomies.tsv"
-    df.to_csv(output_file, sep="\t", index=False, header=None)
-    print(f"Processed file saved as: {output_file}")
-
-def process_gz_tsv(gz_file):
-    with gzip.open(gz_file, "rt") as f:  # Open as text mode
-        df = pd.read_csv(f, sep="\t")
-        return df
+    df.to_csv(snakemake.output[0], sep="\t", index=False, header=header, compression='gzip')
+    print(f"Processed file saved as: {snakemake.output[0]}")
 
 if __name__ == "__main__":
-    df = process_gz_tsv(snakemake.input[0])
-    process_tsv(snakemake.input[0], df)
+    process_tsv(snakemake.input[0], header=TAXONOMY_HEADERS)
