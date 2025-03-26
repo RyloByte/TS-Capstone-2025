@@ -38,7 +38,7 @@ rule create_swissprot_taxonomies:
     input:
         "utils/swissprot_data.tsv.gz"
     output:
-        "utils/swissprot_taxonomies.tsv"
+        "utils/swissprot_taxonomies.tsv.gz"
     script:
         "scripts/create_taxonomies.py"
     
