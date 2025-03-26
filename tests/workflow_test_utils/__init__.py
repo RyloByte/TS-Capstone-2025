@@ -1,4 +1,6 @@
 import os
+import shutil
+from os import PathLike
 
 
 def copy_config(config_path, test_config_path, ext=".example"):
@@ -15,14 +17,14 @@ def copy_config(config_path, test_config_path, ext=".example"):
                 old_path = os.path.join(root, file)
                 new_name = os.path.splitext(file)[0]
                 new_path = os.path.join(test_config_dir, new_name)
-                os.symlink(old_path, new_path)
+                shutil.copy(old_path, new_path)
 
 
-def gather_expected_outputs(expected_state_path):
-    expected_outputs = []
+def gather_files(expected_state_path: str | PathLike[str]) -> set[str]:
+    expected_outputs = set()
     for root, _, files in os.walk(expected_state_path):
         for file in files:
             full_output_path = os.path.join(root, file)
             relative_output_path = os.path.relpath(full_output_path, start=expected_state_path)
-            expected_outputs.append(relative_output_path)
+            expected_outputs.add(relative_output_path)
     return expected_outputs

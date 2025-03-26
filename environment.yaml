@@ -13,3 +13,4 @@ dependencies:
   - pip
   - pip:
       - pytest-xdist
+      - unittest-scenarios
