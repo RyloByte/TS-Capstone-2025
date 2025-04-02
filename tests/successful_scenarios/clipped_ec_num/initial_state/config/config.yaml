@@ -1,3 +1,4 @@
 structure_cluster_threshold: 0.6
 sequence_cluster_threshold: 0.7
-max_homologous_proteins: 5
+homologous_lookup:
+  max_proteins: 5

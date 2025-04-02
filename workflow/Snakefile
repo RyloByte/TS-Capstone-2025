@@ -47,11 +47,11 @@ rule create_swissprot_taxonomies:
 
 rule rename_fasta:
     input:
-        "{dir_}/{file_}.fasta"
+        "{file_}.fasta"
     output:
-        "{dir_}/{file_}.faa"
+        temp("{file_}.faa")
     shell:
-        "mv {input} {output}"
+        "cp {input} {output}"
 
 rule id_mapping:
     input:
@@ -63,23 +63,21 @@ rule id_mapping:
 
 rule rhea_homologous_proteins:
     input:
-        "input/{sample}-rhea_id.txt",
         "utils/swissprot_data.tsv.gz",
         "utils/swissprot_sequences.fasta.gz"
     output:
-        temp("data/{sample}-uniprot_mapped.faa")
+        temp("data/rhea_{number}-uniprot_mapped.faa")
     script:
-        "scripts/rhea_homologous_proteins.py"
+        "scripts/homologous_proteins.py"
 
 rule ec_homologous_proteins:
     input:
-        "input/{sample}-ecnumber.txt",
         "utils/swissprot_data.tsv.gz",
         "utils/swissprot_sequences.fasta.gz"
     output:
-        temp("data/{sample}-uniprot_mapped.faa")
+        temp("data/ec_{number}-uniprot_mapped.faa")
     script:
-        "scripts/ec_homologous_proteins.py"
+        "scripts/homologous_proteins.py"
 
 # clustering and treesapp prep
 
@@ -111,8 +109,9 @@ rule treesapp_create:
     conda:
         "envs/treesapp.yaml"
     input:
-        "data/{sample}-sequence_clusters.tar.gz",
-        "utils/swissprot_data.tsv.gz"
+        "utils/swissprot_data.tsv.gz",
+        "utils/swissprot_taxonomies.tsv",
+        "data/{sample}-sequence_clusters.tar.gz"
     output:
         "result/{sample}-hyperpackage.tar.gz"
     script:

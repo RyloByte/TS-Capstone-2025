@@ -27,7 +27,7 @@ jobs:
         with:
           path: |
             utils
-          key: fixed-key
+          key: fixed-key-2
 
       - name: run pytest
         shell: bash -l {0}
