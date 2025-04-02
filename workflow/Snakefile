@@ -6,7 +6,7 @@ rule download_foldseek_database:
     conda:
         "envs/foldseek.yaml"
     output:
-        "utils/foldseek_spdb/foldseek_spdb",
+        protected("utils/foldseek_spdb/foldseek_spdb")
     shell:
         """
         mkdir -p utils/foldseek_spdb; \
@@ -16,7 +16,7 @@ rule download_foldseek_database:
 
 rule download_swissprot_sequences:
     output:
-        "utils/swissprot_sequences.fasta.gz"
+        protected("utils/swissprot_sequences.fasta.gz")
     shell:
         """
         echo "Downloading SwissProt sequences. This will take a few minutes..."; \
@@ -26,13 +26,22 @@ rule download_swissprot_sequences:
 
 rule download_swissprot_data:
     output:
-        "utils/swissprot_data.tsv.gz"
+        protected("utils/swissprot_data.tsv.gz")
     shell:
         """
         echo "Downloading SwissProt data. This will take a few minutes..."; \
         mkdir -p utils; \
         curl -o {output} "https://rest.uniprot.org/uniprotkb/stream?compressed=true&fields=accession%2Crhea%2Cid%2Cprotein_name%2Cxref_alphafolddb%2Cxref_pdb%2Corganism_id%2Cec%2Clineage_ids&format=tsv&query=(reviewed:true)";
         """
+
+rule create_swissprot_taxonomies:
+    input:
+        "utils/swissprot_data.tsv.gz"
+    output:
+        protected("utils/swissprot_taxonomies.tsv.gz")
+    script:
+        "scripts/create_taxonomies.py"
+    
 
 # user inputs
 
@@ -48,7 +57,7 @@ rule id_mapping:
     input:
         "input/{sample}.faa"
     output:
-        "data/{sample}-uniprot_mapped.faa"
+        temp("data/{sample}-uniprot_mapped.faa")
     script:
         "scripts/id_mapping.py"
 
@@ -57,7 +66,7 @@ rule rhea_homologous_proteins:
         "utils/swissprot_data.tsv.gz",
         "utils/swissprot_sequences.fasta.gz"
     output:
-        "data/rhea_{number}-uniprot_mapped.faa"
+        temp("data/rhea_{sample}-uniprot_mapped.faa")
     script:
         "scripts/homologous_proteins.py"
 
@@ -66,7 +75,7 @@ rule ec_homologous_proteins:
         "utils/swissprot_data.tsv.gz",
         "utils/swissprot_sequences.fasta.gz"
     output:
-        "data/ec_{number}-uniprot_mapped.faa"
+        temp("data/ec_{sample}-uniprot_mapped.faa")
     script:
         "scripts/homologous_proteins.py"
 
@@ -80,7 +89,7 @@ rule structure_clustering:
         "utils/foldseek_spdb/foldseek_spdb",
         "utils/swissprot_data.tsv.gz"
     output:
-        "data/{sample}-structure_clusters.tar.gz"
+        temp("data/{sample}-structure_clusters.tar.gz")
     script:
         "scripts/structure_clustering.py"
 
@@ -90,7 +99,7 @@ rule sequence_clustering:
     input:
         "data/{sample}-structure_clusters.tar.gz"
     output:
-        "data/{sample}-sequence_clusters.tar.gz"
+        temp("data/{sample}-sequence_clusters.tar.gz")
     script:
         "scripts/sequence_clustering.py"
 
