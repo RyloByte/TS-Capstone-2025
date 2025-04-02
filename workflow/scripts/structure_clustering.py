@@ -14,41 +14,28 @@ CLUST_DIR = "data/foldseek_cluster"
 MAX_SEQS = snakemake.config["foldseek_max_seqs"]
 SP_ONLY = snakemake.config["foldseek_swissprot_only"]
 
-# def get_experimental_pdb(uniprot_map: pd.DataFrame, uniprot_id: str):
-#     pdb_ids = uniprot_map[(uniprot_map["Entry"] == uniprot_id) & (~uniprot_map["PDB"].isna())] 
-#     if len(pdb_ids) == 0:
-#         return None
-#     pdb_ids = uniprot_map["PDB"].unique()[0]
-#     pdb_ids = [x for x in pdb_ids.strip().split(";") if x != ""]
-#     print(f"EXP: {pdb_ids}")
-#     print(f"Found {len(pdb_ids)} experimental PDBs, selecting first structure...")
-#     return pdb_ids[0]
-
-# def get_alphafold_pdb(uniprot_map: pd.DataFrame, uniprot_id: str):
-#     pdb_ids = uniprot_map[(uniprot_map["Entry"] == uniprot_id) & (~uniprot_map["AlphaFoldDB"].isna())] 
-#     if len(pdb_ids) == 0:
-#         return None
-#     pdb_ids = pdb_ids["AlphaFoldDB"].unique()[0]
-#     pdb_ids = [x for x in pdb_ids.strip().split(";") if x != ""]
-#     print(f"AF: {pdb_ids}")
-#     print(f"Found {len(pdb_ids)} AlphaFoldDB PDBs, selecting first structure...")
-#     return pdb_ids[0]
-
-def create_cluster_output(cluster_df, output_tar_file):    
+def create_cluster_output(cluster_df, homologous_seqs, output_tar_file):    
     # Write each cluster to a separate .faa file
     os.makedirs(os.path.join("data", "foldseek_cluster"), exist_ok=True)
 
     faa_files = []
-    for i, cluster_id in enumerate(cluster_df["cluster_id"].unique()):
+    for i, cluster_id in enumerate(cluster_df["repID"].unique()):
         # Define the output file name
-        output_file = os.path.join("data", "foldseek_cluster", f"cluster_{i}.faa")
+        output_file = os.path.join("data", "foldseek_cluster", f"cluster_{cluster_id}.faa")
         faa_files.append(output_file)
         
         # Write sequences to the file
         with open(output_file, "w", newline="\n") as f:
+
+            # first, save fastas for original homologous sequences 
+            for h_seq in homologous_seqs:
+                if h_seq in cluster_df[cluster_df["repID"] == cluster_id]["memID"].unique():
+                    SeqIO.write(homologous_seqs[h_seq], f, "fasta")
+
+            # then get sequences for other clusters
             n_members = 0
-            for member_ids in cluster_df[cluster_df["cluster_id"] == cluster_id]["member_id"].unique():
-                if n_members > MAX_SEQS:
+            for member_ids in cluster_df[cluster_df["repID"] == cluster_id]["memID"].unique():
+                if n_members > MAX_SEQS - 1:
                     continue
                 if SP_ONLY:
                     found_sequence, record = get_sp_status(member_ids)
@@ -64,6 +51,8 @@ def create_cluster_output(cluster_df, output_tar_file):
     with tarfile.open(output_tar_file, "w:gz") as tar:
         for file in faa_files:
             tar.add(file, arcname=os.path.basename(file))
+
+    print(f"Saved structure clusters to {output_tar_file}!")
 
 def get_fasta_from_uniprot(uniprot_id):
     url = f"https://www.uniprot.org/uniprot/{uniprot_id}.fasta"
@@ -91,49 +80,89 @@ def get_sp_status(uniprot_id):
 # snakemake.output[0] = "data/{sample}-structure_clusters.tar.gz", fill with {0..n}.faa
 if __name__ == "__main__":
     # load sequences
-    homologous_seqs = [x.id.split("|")[1] for x in list(SeqIO.parse(snakemake.input[0], "fasta"))]
-    print(homologous_seqs)
+    homologous_seqs = {x.id.split("|")[1]: x for x in list(SeqIO.parse(snakemake.input[0], "fasta"))}
+    print(f"Detected the following Rhea homologous proteins: {list(homologous_seqs.keys())}")
 
-    foldseek_clusters = pd.read_csv(snakemake.input[1], sep="\t", names=["memberID", "repID", "taxID"], compression="gzip")
+    print("Loading Foldseek cluster database... (this will take a moment)")
 
-    seq_clusters = {}
+    foldseek_clusters = pd.read_csv(snakemake.input[1], sep="\t", names=["repID", "memID", "cluFlag", "taxID"], compression="gzip")
+
+    # filter to remove singletons
+    foldseek_clusters = foldseek_clusters[(~foldseek_clusters["cluFlag"] != 3) & (~foldseek_clusters["cluFlag"] != 4)]
+    print(f"Loaded Foldseek cluster database containing {len(foldseek_clusters)} proteins in {foldseek_clusters['repID'].nunique()} non-singleton clusters!")
+    
+    # get all cluster ids matching homologous sequences\
     cluster_ids = set()
 
-    # find all clusters
-    with gzip.open(snakemake.input[1], "rt") as infile:
-        for line in infile:
-            repID, memID, cluFlag, taxID = line.strip("\n").split("\t")
-            if memID in homologous_seqs:
-                if cluFlag == 3 or cluFlag == 4:
-                    print(f"{memID} identified as singleton, skipping...")
-                else:
-                    print(f"{memID} identified in {repID} cluster!")
-                    if memID not in seq_clusters:
-                        seq_clusters[memID] = {}
-                        seq_clusters[memID]["repID"] = []
+    for h_seq in homologous_seqs:
+        h_df = foldseek_clusters[foldseek_clusters["memID"] == h_seq]
+        if len(h_df) == 0:
+            print(f"ERROR: {h_seq} not found in non-singleton cluster, continuing...")
+        else:
+            cluster_ids.add(h_df["repID"].unique()[0])
+    
+    print(f"Identified {len(cluster_ids)} non-singleton clusters, extracting cluster information...")
 
-                    seq_clusters[memID]["taxID"] = taxID
-                    seq_clusters[memID]["repID"].append(repID)
-                    cluster_ids.add(repID)
+    # get all proteins in matching cluster_ids
+    seq_clusters = foldseek_clusters[foldseek_clusters["repID"].isin(cluster_ids)]
+    seq_clusters = seq_clusters.drop(columns=["cluFlag"])
+    
+    print(f"Found {len(seq_clusters)} structually similar proteins! Retrieving fasta sequences...")
 
-    print(f"Identified {len(seq_clusters)}/{len(homologous_seqs)} as non-singletons comprising {len(cluster_ids)} clusters, extracting cluster information...")
+    if SP_ONLY:
+        print("NOTE: Skipping all non-swiss-prot proteins in clusters!")
+
+    create_cluster_output(seq_clusters, homologous_seqs, snakemake.output[0])
+
+    # seq_clusters = {}
+    # cluster_ids = set()
+
+    # print("Finding Foldseek clusters...")
+    # print(foldseek_clusters.head())
+    # print(len(foldseek_clusters))
+
+    # # find all clusters
+    # with gzip.open(snakemake.input[1], "rt") as infile:
+    #     print(len(infile))
+    #     for i, line in enumerate(infile):
+
+    #         repID, memID, cluFlag, taxID = line.strip("\n").split("\t")
+    #         if memID in homologous_seqs:
+    #             if cluFlag == 3 or cluFlag == 4:
+    #                 print(f"{memID} identified as singleton, skipping...")
+    #             else:
+    #                 print(f"{memID} identified in {repID} cluster!")
+    #                 if memID not in seq_clusters:
+    #                     seq_clusters[memID] = {}
+    #                     seq_clusters[memID]["repID"] = []
+
+    #                 seq_clusters[memID]["taxID"] = taxID
+    #                 seq_clusters[memID]["repID"].append(repID)
+    #                 cluster_ids.add(repID)
+
+    #         if i % 10000 == 0:
+    #             print(f"Scanning through Foldseek clusters... ({i}/{len(infile)})")
+
 
     # iter through file again and get all ids 
-    cluster_lst = []
-    member_lst = []
-    tax_lst = []
+    # cluster_lst = []
+    # member_lst = []
+    # tax_lst = []
 
-    with gzip.open(snakemake.input[1], "rt") as infile:
-        for line in infile:
-            repID, memID, cluFlag, taxID = line.strip("\n").split("\t")                
-            if repID in cluster_ids:
-                cluster_lst.append(repID)
-                member_lst.append(memID)
-                tax_lst.append(taxID)
+    # with gzip.open(snakemake.input[1], "rt") as infile:
+    #     for line in infile:
+    #         repID, memID, cluFlag, taxID = line.strip("\n").split("\t")                
+    #         if repID in cluster_ids:
+    #             cluster_lst.append(repID)
+    #             member_lst.append(memID)
+    #             tax_lst.append(taxID)
 
-    cluster_out = pd.DataFrame({"cluster_id": cluster_lst, "member_id": member_lst, "taxonomy_id": tax_lst})
+    # cluster_out = pd.DataFrame({"cluster_id": cluster_lst, "member_id": member_lst, "taxonomy_id": tax_lst})
     
-    print(f"Found {len(cluster_out)} structually similar proteins! Retrieving fasta sequences...")
+    # print(f"Found {len(cluster_out)} structually similar proteins! Retrieving fasta sequences...")
 
-    create_cluster_output(cluster_out, snakemake.output[0])
+    # if SP_ONLY:
+    #     print("NOTE: Skipping all non-swiss-prot proteins in clusters!")
+
+    # create_cluster_output(cluster_out, snakemake.output[0])
         
