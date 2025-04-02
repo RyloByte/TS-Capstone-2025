@@ -1,8 +1,6 @@
-homologous_lookup:
-  max_proteins: 100
 structure_cluster_threshold: 0.6
 max_homologous_proteins: 100
-foldseek_max_seqs: 100
+foldseek_max_seqs: 20
 foldseek_swissprot_only: False
 sequence_clustering:
   min_seq_id: 0.9
@@ -21,7 +19,3 @@ sequence_clustering:
   similarity_type: 2
   realign: 1
   remove_output_files: 1
-treesapp_create:
-  extra_args: ""
-  ref_pkg_name_length: 6
-  show_treesapp_output: False

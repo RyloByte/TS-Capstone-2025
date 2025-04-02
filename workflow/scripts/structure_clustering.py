@@ -2,140 +2,114 @@ from snakemake.script import snakemake
 from Bio import SeqIO
 import pandas as pd
 import os
+import gzip
 import subprocess
 import shutil
 import tarfile
+import requests
 
-PDB_DIR = "data/pdb_structures"
 RES_DIR = "data/foldseek_results"
 CLUST_DIR = "data/foldseek_cluster"
 
-CLUSTER_THRESHOLD = snakemake.config["structure_cluster_threshold"]
-E_THRESHOLD = snakemake.config["foldseek_eval_threshold"]
-N_ITERS = snakemake.config["foldseek_num_iterations"]
 MAX_SEQS = snakemake.config["foldseek_max_seqs"]
+SP_ONLY = snakemake.config["foldseek_swissprot_only"]
 
-def get_experimental_pdb(uniprot_map: pd.DataFrame, uniprot_id: str):
-    pdb_ids = uniprot_map[(uniprot_map["Entry"] == uniprot_id) & (~uniprot_map["PDB"].isna())] 
-    if len(pdb_ids) == 0:
-        return None
-    pdb_ids = uniprot_map["PDB"].unique()[0]
-    pdb_ids = [x for x in pdb_ids.strip().split(";") if x != ""]
-    print(f"EXP: {pdb_ids}")
-    print(f"Found {len(pdb_ids)} experimental PDBs, selecting first structure...")
-    return pdb_ids[0]
-
-def get_alphafold_pdb(uniprot_map: pd.DataFrame, uniprot_id: str):
-    pdb_ids = uniprot_map[(uniprot_map["Entry"] == uniprot_id) & (~uniprot_map["AlphaFoldDB"].isna())] 
-    if len(pdb_ids) == 0:
-        return None
-    pdb_ids = pdb_ids["AlphaFoldDB"].unique()[0]
-    pdb_ids = [x for x in pdb_ids.strip().split(";") if x != ""]
-    print(f"AF: {pdb_ids}")
-    print(f"Found {len(pdb_ids)} AlphaFoldDB PDBs, selecting first structure...")
-    return pdb_ids[0]
-
-def create_cluster_output(all_seqs_fasta, output_tar_file):
-    sequences = list(SeqIO.parse(all_seqs_fasta, "fasta"))
-    clusters = {}
-    current_cluster = None
-    for seq in sequences:
-        if len(str(seq.seq)) == 0:
-            current_cluster = seq.id
-            clusters[current_cluster] = []
-        else:
-            clusters[current_cluster].append(seq)
-    
+def create_cluster_output(cluster_df, homologous_seqs, output_tar_file):    
     # Write each cluster to a separate .faa file
+    os.makedirs(os.path.join("data", "foldseek_cluster"), exist_ok=True)
+
     faa_files = []
-    for i, cluster_id in enumerate(clusters):
+    for i, cluster_id in enumerate(cluster_df["repID"].unique()):
         # Define the output file name
-        output_file = os.path.join("data", "foldseek_cluster", f"cluster_{i}.faa")
+        output_file = os.path.join("data", "foldseek_cluster", f"cluster_{cluster_id}.faa")
         faa_files.append(output_file)
+        
         # Write sequences to the file
-        seqs = clusters[cluster_id]
         with open(output_file, "w", newline="\n") as f:
-            SeqIO.write(seqs, f, "fasta")
-    
+
+            # first, save fastas for original homologous sequences 
+            for h_seq in homologous_seqs:
+                if h_seq in cluster_df[cluster_df["repID"] == cluster_id]["memID"].unique():
+                    SeqIO.write(homologous_seqs[h_seq], f, "fasta")
+
+            # then get sequences for other clusters
+            n_members = 0
+            for member_ids in cluster_df[cluster_df["repID"] == cluster_id]["memID"].unique():
+                if n_members > MAX_SEQS - 1:
+                    continue
+                if SP_ONLY:
+                    found_sequence, record =  (member_ids)
+                    if found_sequence:
+                        SeqIO.write(record, f, "fasta")
+                        n_members += 1
+                else:
+                    member_fasta = get_fasta_from_uniprot(member_ids)
+                    f.write(member_fasta)
+                    n_members += 1    
+            print(f"Found {n_members} qualifying sequences for cluster {cluster_id}")            
+                
     with tarfile.open(output_tar_file, "w:gz") as tar:
         for file in faa_files:
             tar.add(file, arcname=os.path.basename(file))
 
+    print(f"Saved structure clusters to {output_tar_file}!")
+
+def get_fasta_from_uniprot(uniprot_id):
+    url = f"https://www.uniprot.org/uniprot/{uniprot_id}.fasta"
+    response = requests.get(url)
+    
+    if response.status_code == 200:
+        return response.text
+    else:
+        print(f"Error: Unable to fetch data for {uniprot_id}. Status code: {response.status_code}")
+        return None
+
+def get_sp_status(uniprot_id):
+    found_sequence = False
+    with gzip.open(snakemake.input[2], "rt") as f:
+        records = list(SeqIO.parse(f, "fasta"))
+        for record in records:
+            if uniprot_id in record.id:
+                found_sequence = True
+                return found_sequence, record
+    return found_sequence, ""
 
 # snakemake.input[0] = "data/{sample}-homologous_proteins.faa"
-# snakemake.input[1] = "utils/foldseek_spdb/foldseek_spdb"
-# snakemake.input[2] = "utils/uniprot_spdb/uniprotkb_AND_reviewed_true.tsv"
+# snakemake.input[1] = "utils/foldseek_clusters/foldseek_clusters.tsv.gz"
+# snakemake.input[2] = "utils/swissprot_sequences.fasta.gz"
 # snakemake.output[0] = "data/{sample}-structure_clusters.tar.gz", fill with {0..n}.faa
 if __name__ == "__main__":
     # load sequences
-    homologous_seqs = list(SeqIO.parse(snakemake.input[0], "fasta"))
+    homologous_seqs = {x.id.split("|")[1]: x for x in list(SeqIO.parse(snakemake.input[0], "fasta"))}
+    print(f"Detected the following Rhea homologous proteins: {list(homologous_seqs.keys())}")
 
-    uniprot_map = pd.read_csv(snakemake.input[2], sep="\t")
-    print(uniprot_map.columns)
-    print(uniprot_map.head())
+    print("Loading Foldseek cluster database... (this will take a moment)")
 
-    # download pdb files
-    os.makedirs(PDB_DIR, exist_ok=True)
-    os.makedirs(RES_DIR, exist_ok=True)
-    os.makedirs(CLUST_DIR, exist_ok=True)
+    foldseek_clusters = pd.read_csv(snakemake.input[1], sep="\t", names=["repID", "memID", "cluFlag", "taxID"], compression="gzip")
+
+    # filter to remove singletons
+    foldseek_clusters = foldseek_clusters[(~foldseek_clusters["cluFlag"] != 3) & (~foldseek_clusters["cluFlag"] != 4)]
+    print(f"Loaded Foldseek cluster database containing {len(foldseek_clusters)} proteins in {foldseek_clusters['repID'].nunique()} non-singleton clusters!")
+    
+    # get all cluster ids matching homologous sequences\
+    cluster_ids = set()
 
     for h_seq in homologous_seqs:
-        h_id = h_seq.id.split("|")[1]
-        print(h_id)
-        # check if there is already a pdb file for this protein
-        if not os.path.exists(os.path.join(PDB_DIR, f"{h_id}.pdb")):
-            if h_id not in uniprot_map["Entry"].unique():
-                print(f"Warning: {h_id} not found in Swiss-Prot database, skipping...")
-                continue
-            pdb_id = get_experimental_pdb(uniprot_map, h_id)
-            
-            if pdb_id is None:
-                pdb_id = get_alphafold_pdb(uniprot_map, h_id)
-                if pdb_id is None:
-                    print(f"Warning: {h_id} does not have any structures, skipping...")
-                    continue
-                else:
-                    subprocess.run(["wget", f"https://alphafold.ebi.ac.uk/files/AF-{pdb_id}-F1-model_v4.pdb", "-O", f"{PDB_DIR}/{h_id}.pdb"])
-            else:
-                subprocess.run(["wget", f"https://files.rcsb.org/download/{pdb_id}.pdb", "-O", f"{PDB_DIR}/{h_id}.pdb"])
+        h_df = foldseek_clusters[foldseek_clusters["memID"] == h_seq]
+        if len(h_df) == 0:
+            print(f"ERROR: {h_seq} not found in non-singleton cluster, continuing...")
         else:
-            print(f"Found PDB_DIR/{h_id}.pdb, skipping download")
-
-    for pdb in os.listdir(PDB_DIR):
-        if os.path.basename(pdb).split(".")[0] in [h_seq.id.split("|")[1] for h_seq in homologous_seqs]:
-            subprocess.run([
-                "foldseek", 
-                "easy-search", 
-                f"{PDB_DIR}/{pdb}", 
-                snakemake.input[1], 
-                f"{RES_DIR}/{os.path.splitext(pdb)[0]}", 
-                "tmp",
-                "--format-output", "query,target,alntmscore,lddt,prob",
-                "-e", str(E_THRESHOLD),
-                "--num-iterations", str(N_ITERS),
-                "--max-seqs", str(MAX_SEQS),
-                ])
+            cluster_ids.add(h_df["repID"].unique()[0])
     
-    for pdb_res in os.listdir(RES_DIR):
-        res_df = pd.read_csv(os.path.join(RES_DIR, pdb_res), sep="\t", names=["query", "target", "alntmscore", "lddt", "prob"])
+    print(f"Identified {len(cluster_ids)} non-singleton clusters, extracting cluster information...")
 
-        for i, af_pdb in enumerate(res_df["target"].unique()):
-            af_id = af_pdb.split("-")[1]
-            if i > MAX_SEQS:
-                continue
-            if not os.path.exists(os.path.join(PDB_DIR, f"{af_id}.pdb")):
-                subprocess.run(["wget", f"https://alphafold.ebi.ac.uk/files/{af_pdb}.pdb", "-O", f"{PDB_DIR}/{af_id}.pdb"])
+    # get all proteins in matching cluster_ids
+    seq_clusters = foldseek_clusters[foldseek_clusters["repID"].isin(cluster_ids)]
+    seq_clusters = seq_clusters.drop(columns=["cluFlag"])
+    
+    print(f"Found {len(seq_clusters)} structually similar proteins! Retrieving fasta sequences...")
 
+    if SP_ONLY:
+        print("NOTE: Skipping all non-swiss-prot proteins in clusters!")
 
-    print(f"FOUND {len(os.listdir(PDB_DIR))} STRUCTURALLY SIMILAR PROTEINS, NOW CLUSTERING...")
-
-    subprocess.run([
-        "foldseek", "easy-cluster", PDB_DIR, os.path.join(CLUST_DIR, "fs_cluster_results"), "tmp",
-        "--alignment-type", "1",
-        "-e", str(E_THRESHOLD),])
- 
-    create_cluster_output(os.path.join(CLUST_DIR, "fs_cluster_results_all_seqs.fasta"), snakemake.output[0])
-
-    shutil.rmtree("tmp")
-
-        
+    create_cluster_output(seq_clusters, homologous_seqs, snakemake.output[0])

@@ -6,12 +6,11 @@ rule download_foldseek_database:
     conda:
         "envs/foldseek.yaml"
     output:
-        protected("utils/foldseek_spdb/foldseek_spdb")
+        protected("utils/foldseek_clusters/foldseek_clusters.tsv.gz")
     shell:
         """
-        mkdir -p utils/foldseek_spdb; \
-        cd utils/foldseek_spdb; \
-        foldseek databases Alphafold/Swiss-Prot foldseek_spdb tmp; \
+        mkdir -p utils/foldseek_clusters; \
+        wget -O {output} https://afdb-cluster.steineggerlab.workers.dev/5-allmembers-repId-entryId-cluFlag-taxId.tsv.gz;\
         """
 
 rule download_swissprot_sequences:
@@ -74,19 +73,17 @@ rule ec_homologous_proteins:
 # clustering and treesapp prep
 
 rule structure_clustering:
-    conda:
-        "envs/foldseek.yaml"
     input:
         "data/{sample}-uniprot_mapped.faa",
-        "utils/foldseek_spdb/foldseek_spdb",
-        "utils/swissprot_data.tsv.gz"
+        "utils/foldseek_clusters/foldseek_clusters.tsv.gz",
+        "utils/swissprot_sequences.fasta.gz"
     output:
         temp("data/{sample}-structure_clusters.tar.gz")
     script:
         "scripts/structure_clustering.py"
 
 rule sequence_clustering:
-    conda:
+    conda: 
         "envs/mmseqs2.yaml"
     input:
         "data/{sample}-structure_clusters.tar.gz"
