@@ -53,14 +53,6 @@ rule rename_fasta:
     shell:
         "cp {input} {output}"
 
-rule id_mapping:
-    input:
-        "input/{sample}.faa"
-    output:
-        temp("data/{sample}-uniprot_mapped.faa")
-    script:
-        "scripts/id_mapping.py"
-
 rule rhea_homologous_proteins:
     input:
         "utils/swissprot_data.tsv.gz",
