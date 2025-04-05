@@ -37,7 +37,7 @@ def run_treesapp(input_faa: str, ref_pkg_name: str, output_dir: str, taxonomy_fi
             "-o",
             output_dir,
             "--headless",
-            "--accession2lin",
+            "--seqs2lin",
             taxonomy_file,
             extra_args
         ],

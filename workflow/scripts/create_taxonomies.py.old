@@ -3,7 +3,7 @@ import sys
 import os
 import gzip
 
-TAXONOMY_HEADERS = snakemake.config["utils"]["taxonomy_headers"]
+# TAXONOMY_HEADERS = snakemake.config["utils"]["taxonomy_headers"]
 
 
 def convert_lineage(lineage_str):
@@ -61,4 +61,26 @@ def process_tsv(input_filepath, header=None):
     print(f"Processed file saved as: {snakemake.output[0]}")
 
 if __name__ == "__main__":
-    process_tsv(snakemake.input[0], header=TAXONOMY_HEADERS)
+    # process_tsv(snakemake.input[0], header=TAXONOMY_HEADERS)
+
+    from Bio import SwissProt
+    import gzip
+    with gzip.open("../../utils/uniprot_sprot_archaea.dat.gz", "rt") as f:
+        records = SwissProt.parse(f)
+        i = 0
+        for record in records:
+            print("hi")
+            if i > 5:
+                raise Exception()
+            else:
+                i += 1
+
+    # swissprot_data = pd.read_csv("../../utils/uniprot_sprot.fasta.gz", sep="\t", compression='gzip')
+    # print(swissprot_data.columns)
+    # print(swissprot_data.head())
+
+    # from ftplib import FTP
+    # ftp = FTP("ftp.uniprot.org")
+    # ftp.login()
+    # ftp.cwd("/pub/databases/uniprot/current_release/knowledgebase/taxonomic_divisions/")
+    # print(ftp.nlst())

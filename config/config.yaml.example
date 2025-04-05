@@ -1,7 +1,6 @@
-homologous_lookup:
+activity_lookup:
   max_proteins: 100
 structure_cluster_threshold: 0.6
-max_homologous_proteins: 100
 foldseek_max_seqs: 100
 foldseek_swissprot_only: False
 sequence_clustering:
