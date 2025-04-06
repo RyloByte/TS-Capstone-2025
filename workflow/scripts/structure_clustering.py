@@ -1,115 +1,68 @@
-from snakemake.script import snakemake
-from Bio import SeqIO
-import pandas as pd
 import os
-import gzip
-import subprocess
-import shutil
+import sqlite3
 import tarfile
-import requests
+import tempfile
+from collections import defaultdict, Counter
 
-RES_DIR = "data/foldseek_results"
-CLUST_DIR = "data/foldseek_cluster"
+from Bio import SeqIO
+from snakemake.script import snakemake
 
-MAX_SEQS = snakemake.config["foldseek_max_seqs"]
-SP_ONLY = snakemake.config["foldseek_swissprot_only"]
 
-def create_cluster_output(cluster_df, homologous_seqs, output_tar_file):    
-    # Write each cluster to a separate .faa file
-    os.makedirs(os.path.join("data", "foldseek_cluster"), exist_ok=True)
+config = snakemake.config["structure_clustering"]
+MIN_CLUSTER_SIZE = config["min_cluster_size"]
 
-    faa_files = []
-    for i, cluster_id in enumerate(cluster_df["repID"].unique()):
-        # Define the output file name
-        output_file = os.path.join("data", "foldseek_cluster", f"cluster_{cluster_id}.faa")
-        faa_files.append(output_file)
-        
-        # Write sequences to the file
-        with open(output_file, "w", newline="\n") as f:
 
-            # first, save fastas for original homologous sequences 
-            for h_seq in homologous_seqs:
-                if h_seq in cluster_df[cluster_df["repID"] == cluster_id]["memID"].unique():
-                    SeqIO.write(homologous_seqs[h_seq], f, "fasta")
-
-            # then get sequences for other clusters
-            n_members = 0
-            for member_ids in cluster_df[cluster_df["repID"] == cluster_id]["memID"].unique():
-                if n_members > MAX_SEQS - 1:
-                    continue
-                if SP_ONLY:
-                    found_sequence, record =  (member_ids)
-                    if found_sequence:
-                        SeqIO.write(record, f, "fasta")
-                        n_members += 1
-                else:
-                    member_fasta = get_fasta_from_uniprot(member_ids)
-                    f.write(member_fasta)
-                    n_members += 1    
-            print(f"Found {n_members} qualifying sequences for cluster {cluster_id}")            
-                
-    with tarfile.open(output_tar_file, "w:gz") as tar:
-        for file in faa_files:
-            tar.add(file, arcname=os.path.basename(file))
-
-    print(f"Saved structure clusters to {output_tar_file}!")
-
-def get_fasta_from_uniprot(uniprot_id):
-    url = f"https://www.uniprot.org/uniprot/{uniprot_id}.fasta"
-    response = requests.get(url)
-    
-    if response.status_code == 200:
-        return response.text
-    else:
-        print(f"Error: Unable to fetch data for {uniprot_id}. Status code: {response.status_code}")
-        return None
-
-def get_sp_status(uniprot_id):
-    found_sequence = False
-    with gzip.open(snakemake.input[2], "rt") as f:
-        records = list(SeqIO.parse(f, "fasta"))
-        for record in records:
-            if uniprot_id in record.id:
-                found_sequence = True
-                return found_sequence, record
-    return found_sequence, ""
-
-# snakemake.input[0] = "data/{sample}-homologous_proteins.faa"
-# snakemake.input[1] = "utils/foldseek_clusters/foldseek_clusters.tsv.gz"
-# snakemake.input[2] = "utils/swissprot_sequences.fasta.gz"
-# snakemake.output[0] = "data/{sample}-structure_clusters.tar.gz", fill with {0..n}.faa
 if __name__ == "__main__":
-    # load sequences
-    homologous_seqs = {x.id.split("|")[1]: x for x in list(SeqIO.parse(snakemake.input[0], "fasta"))}
-    print(f"Detected the following Rhea homologous proteins: {list(homologous_seqs.keys())}")
+    # inputs
+    fasta_file = snakemake.input[0]
+    cluster_db = snakemake.input[1]
 
-    print("Loading Foldseek cluster database... (this will take a moment)")
+    # outputs
+    output_archive = snakemake.output[0]
 
-    foldseek_clusters = pd.read_csv(snakemake.input[1], sep="\t", names=["repID", "memID", "cluFlag", "taxID"], compression="gzip")
+    # get uniprot accessions from sequences
+    records = {}
+    for record in SeqIO.parse(fasta_file, "fasta"):
+        uniprot_accession = record.id.split("|")[1]
+        records[uniprot_accession] = record
 
-    # filter to remove singletons
-    foldseek_clusters = foldseek_clusters[(~foldseek_clusters["cluFlag"] != 3) & (~foldseek_clusters["cluFlag"] != 4)]
-    print(f"Loaded Foldseek cluster database containing {len(foldseek_clusters)} proteins in {foldseek_clusters['repID'].nunique()} non-singleton clusters!")
-    
-    # get all cluster ids matching homologous sequences\
-    cluster_ids = set()
+    # query cluster db for accessions
+    print(f"Querying structure cluster db for {len(records)} sequences...")
+    conn = sqlite3.connect(cluster_db)
+    placeholders = ",".join(["?"] * len(records))
+    query = f"SELECT repId, memId FROM clusters WHERE memId in ({placeholders})"
 
-    for h_seq in homologous_seqs:
-        h_df = foldseek_clusters[foldseek_clusters["memID"] == h_seq]
-        if len(h_df) == 0:
-            print(f"ERROR: {h_seq} not found in non-singleton cluster, continuing...")
-        else:
-            cluster_ids.add(h_df["repID"].unique()[0])
-    
-    print(f"Identified {len(cluster_ids)} non-singleton clusters, extracting cluster information...")
+    results = conn.execute(query, list(records.keys())).fetchall()
+    conn.close()
 
-    # get all proteins in matching cluster_ids
-    seq_clusters = foldseek_clusters[foldseek_clusters["repID"].isin(cluster_ids)]
-    seq_clusters = seq_clusters.drop(columns=["cluFlag"])
-    
-    print(f"Found {len(seq_clusters)} structually similar proteins! Retrieving fasta sequences...")
+    print(f"Found clusters for {len(results)}/{len(records)} sequences")
 
-    if SP_ONLY:
-        print("NOTE: Skipping all non-swiss-prot proteins in clusters!")
+    # group clusters
+    clusters = defaultdict(list)
+    for repId, memId in results:
+        clusters[repId].append(records[memId])
 
-    create_cluster_output(seq_clusters, homologous_seqs, snakemake.output[0])
+    # print cluster sizes
+    cluster_sizes = Counter(len(cluster) for cluster in clusters.values())
+    max_width = 80
+    most_popular_cluster = max(cluster_sizes.values())
+    multiplier = 1 if most_popular_cluster <= max_width else max_width / most_popular_cluster
+    print("Cluster size / count")
+    for cluster_size, cluster_count in sorted(cluster_sizes.items()):
+        print(f"{cluster_size:3}: {'█' * max(1, int(cluster_count * multiplier))} {cluster_count}")
+
+    # filter by size
+    clusters = {k: v for k, v in clusters.items() if len(v) >= MIN_CLUSTER_SIZE}
+    print(f"Keeping {len(clusters)} clusters larger than {MIN_CLUSTER_SIZE}")
+
+    # create output
+    with tarfile.open(output_archive, "w:gz") as tar:
+        for cluster_id, cluster in clusters.items():
+            with tempfile.NamedTemporaryFile(suffix="fasta", delete=False) as tmp:
+                try:
+                    SeqIO.write(cluster, tmp.name, "fasta")
+                    tmp.close()
+                    tar.add(tmp.name, arcname=f"{cluster_id}.fasta")
+                finally:
+                    if os.path.exists(tmp.name):
+                        os.unlink(tmp.name)

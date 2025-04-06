@@ -2,70 +2,50 @@ configfile: "config/config.yaml"
 
 # resource downloads
 
-# rule download_annotated_swissprot:
-#     output:
-#         "utils/uniprot_sprot.dat.gz"
-#     shell:
-#         """
-#         echo "Downloading annotated SwissProt DB..."
-#         curl -O {output} ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.dat.gz
-#         """
-
 rule download_foldseek_database:
-    conda:
-        "envs/foldseek.yaml"
     output:
-        "utils/foldseek_clusters/foldseek_clusters.tsv.gz"
+        "utils/foldseek_clusters.tsv.gz"
     shell:
         """
-        mkdir -p utils/foldseek_clusters; \
-        wget -O {output} https://afdb-cluster.steineggerlab.workers.dev/5-allmembers-repId-entryId-cluFlag-taxId.tsv.gz;\
+        wget -O {output} https://afdb-cluster.steineggerlab.workers.dev/5-allmembers-repId-entryId-cluFlag-taxId.tsv.gz
         """
 
-rule rename_fasta:
+rule build_cluster_db:
     input:
-        "{file_}.fasta"
+        "utils/foldseek_clusters.tsv.gz",
+        "utils/uniprot_sprot.fasta.gz"
     output:
-        temp("{file_}.faa")
-    shell:
-        "cp {input} {output}"
+        "utils/cluster_db.sqlite3"
+    script:
+        "scripts/build_cluster_db.py"
 
-rule download_ec_entries:
+rule download_swissprot_fasta:
     output:
-        "data/ec_{number}.fasta"
+        "utils/uniprot_sprot.fasta.gz"
     shell:
         """
-        wget -O {output}.gz "https://rest.uniprot.org/uniprotkb/stream?compressed=true&format=fasta&query=%28%28ec%3A{wildcards.number}%29%29+AND+%28reviewed%3Atrue%29"
+        wget -O {output} ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta.gz
+        """
+
+rule download_swissprot_entries_by_activity:  # TODO need to add ability to limit size?
+    output:
+        "data/{activity_type}_{activity_number}.fasta"
+    wildcard_constraints:
+        activity_type="ec|rhea"
+    shell:
+        """
+        wget -O {output}.gz "https://rest.uniprot.org/uniprotkb/stream?compressed=true&format=fasta&query=%28%28{wildcards.activity_type}%3A{wildcards.activity_number}%29%29+AND+%28reviewed%3Atrue%29"
         gunzip {output}.gz
         """
 
-rule download_rhea_entries:
-    output:
-        "data/rhea_{number}.fasta"
-    shell:
-        """
-        wget -O {output}.gz "https://rest.uniprot.org/uniprotkb/stream?compressed=true&format=fasta&query=%28%28rhea%3A{wildcards.number}%29%29+AND+%28reviewed%3Atrue%29"
-        gunzip {output}.gz
-        """
-
-# rule activity_lookup:
-#     input:
-#         "utils/uniprot_sprot.dat.gz"
-#     output:
-#         "data/{number_type}_{number}.faa",
-#         "data/{number_type}_{number}_taxonomies.tsv"
-#     script:
-#         "scripts/activity_lookup.py"
-
-# clustering and treesapp prep
+# clustering
 
 rule structure_clustering:
     input:
-        "data/{sample}-uniprot_mapped.faa",
-        "utils/foldseek_clusters/foldseek_clusters.tsv.gz",
-        "utils/swissprot_sequences.fasta.gz"
+        "data/{sample}.fasta",
+        "utils/cluster_db.sqlite3"
     output:
-        temp("data/{sample}-structure_clusters.tar.gz")
+        "data/{sample}-structure_clusters.tar.gz"
     script:
         "scripts/structure_clustering.py"
 
@@ -79,7 +59,7 @@ rule sequence_clustering:
     script:
         "scripts/sequence_clustering.py"
 
-# create functional reference package
+# call TreeSAPP
 
 rule treesapp_create:
     conda:
