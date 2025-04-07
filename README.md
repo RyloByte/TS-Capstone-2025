@@ -37,7 +37,7 @@ A "hyperpackage" is an archive of several regular TreeSAPP reference packages, e
 
 # Setup
 
-This workflow requires [Conda](https://www.anaconda.com/docs/getting-started/miniconda/install).
+This workflow requires [Conda](https://www.anaconda.com/docs/getting-started/miniconda/install) and uses tools for Linux/Mac.
 
 1. Clone the repository
 2. Create the conda environment via `conda env create -f environment.yaml`

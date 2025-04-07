@@ -8,5 +8,6 @@ dependencies:
   - pandas
   - biopython
   - wget
+  - gzip
   - tqdm
   - pytest
