@@ -47,6 +47,16 @@ rule download_swissprot_entries_by_activity:
         echo "Downloaded $seq_count sequences for {wildcards.activity_type} {wildcards.activity_number}"
         """
 
+rule unzip_fasta:
+    input:
+        "{sample}.fasta.gz"
+    output:
+        "{sample}.fasta"
+    shell:
+        """
+        gunzip {input}
+        """
+
 # clustering
 
 rule structure_clustering:
