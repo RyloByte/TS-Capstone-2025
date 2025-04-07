@@ -55,4 +55,5 @@ jobs:
         shell: bash -l {0}
         run: |
           conda activate snakemake_env
+          mkdir -p utils
           pytest -s -v

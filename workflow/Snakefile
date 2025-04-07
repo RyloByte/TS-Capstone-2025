@@ -8,6 +8,7 @@ rule download_foldseek_database:
     shell:
         """
         echo "Downloading FoldSeek clusters..."
+        mkdir -p utils
         wget -O {output} https://afdb-cluster.steineggerlab.workers.dev/5-allmembers-repId-entryId-cluFlag-taxId.tsv.gz
         """
 
@@ -26,6 +27,7 @@ rule download_swissprot_fasta:
     shell:
         """
         echo "Downloading SwissProt Sequences..."
+        mkdir -p utils
         wget -O {output} ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta.gz
         """
 
@@ -37,6 +39,7 @@ rule download_swissprot_entries_by_activity:
     shell:
         """
         echo "Querying SwissProt for {wildcards.activity_type} {wildcards.activity_number}..."
+        mkdir -p utils
         wget -O {output}.gz "https://rest.uniprot.org/uniprotkb/stream?compressed=true&format=fasta&query=%28%28{wildcards.activity_type}%3A{wildcards.activity_number}%29%29+AND+%28reviewed%3Atrue%29"
         gunzip {output}.gz
         
