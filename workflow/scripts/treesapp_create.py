@@ -13,9 +13,9 @@ from snakemake.script import snakemake
 from tqdm.auto import tqdm
 
 config = snakemake.config["treesapp_create"]
-MUTE_TREESAPP = config.get("mute_treesapp", True)
+MUTE_TREESAPP = config["mute_treesapp"]
 EXTRA_ARGS = []
-for item in config.get("extra_args", []):
+for item in config["extra_args"]:
     EXTRA_ARGS += item.split()
 
 

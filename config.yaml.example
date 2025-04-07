@@ -1,0 +1,34 @@
+# these settings are optimal for performance and have no functional impact
+cluster_db:
+  filter_by_sprot: true
+  chunk_size: 10000000
+
+structure_clustering:
+  # minimum cluster size to accept, inclusive, optional
+  min_cluster_size: 5
+  # maximum cluster size to accept, inclusive, optional
+  max_cluster_size: null
+
+sequence_clustering:
+  # mute the output of the mmseqs2 tool
+  mute_mmseqs: true
+  # minimum cluster size to accept, inclusive, optional
+  min_cluster_size: 5
+  # maximum cluster size to accept, inclusive, optional
+  max_cluster_size: null
+  # argument to pass to mmseqs - can greatly impact hyperpackage composition
+  mmseqs_args: [
+    "--min-seq-id 0.9",
+    "--cov-mode 5",
+    "-k 15",
+    "--shuffle 0",
+    "--remove-tmp-files 0",
+    "--alignment-mode 3",
+    "--realign 1"
+  ]
+
+treesapp_create:
+  # mute the output of the treesapp tool
+  mute_treesapp: true
+  # additional arguments to pass to treesapp
+  extra_args: []

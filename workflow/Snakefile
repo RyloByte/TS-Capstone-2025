@@ -1,10 +1,10 @@
-configfile: "config/config.yaml"
+configfile: "config.yaml"
 
 # resource downloads
 
 rule download_foldseek_database:
     output:
-        "utils/foldseek_clusters.tsv.gz"
+        temp("utils/foldseek_clusters.tsv.gz")
     shell:
         """
         echo "Downloading FoldSeek clusters..."
@@ -23,7 +23,7 @@ rule build_cluster_db:
 
 rule download_swissprot_fasta:
     output:
-        "utils/uniprot_sprot.fasta.gz"
+        temp("utils/uniprot_sprot.fasta.gz")
     shell:
         """
         echo "Downloading SwissProt Sequences..."
