@@ -4,7 +4,13 @@ import tempfile
 
 import pandas as pd
 from Bio import SeqIO
-from cluster_utils import filter_by_size, print_cluster_sizes, save_fasta_clusters, n_input_fastas, extract_input
+from cluster_utils import (
+    extract_input,
+    filter_by_size,
+    n_input_fastas,
+    print_cluster_sizes,
+    save_fasta_clusters,
+)
 from snakemake.script import snakemake
 from tqdm.auto import tqdm
 
@@ -39,9 +45,7 @@ def run_mmseqs(input_fasta: str, output_name: str, temp_name: str) -> None:
     if result.returncode != 0:
         if MUTE_MMSEQS:
             print(result.stderr)
-        raise RuntimeError(
-            f"mmseqs easy-linclust failed with code {result.returncode}"
-        )
+        raise RuntimeError(f"mmseqs easy-linclust failed with code {result.returncode}")
 
 
 if __name__ == "__main__":

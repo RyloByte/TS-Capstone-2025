@@ -8,11 +8,9 @@ import tempfile
 from pathlib import Path
 
 from Bio import SeqIO
-from tqdm.auto import tqdm
-
+from cluster_utils import extract_input, n_input_fastas
 from snakemake.script import snakemake
-
-from cluster_utils import n_input_fastas, extract_input
+from tqdm.auto import tqdm
 
 config = snakemake.config["treesapp_create"]
 MUTE_TREESAPP = config["mute_treesapp"]
@@ -27,9 +25,7 @@ def ref_pkg_name_generator(n: int = 6):
         yield "".join(combo)
 
 
-def run_treesapp(
-    input_fasta: str, ref_pkg_name: str, output_dir: str
-) -> None:
+def run_treesapp(input_fasta: str, ref_pkg_name: str, output_dir: str) -> None:
     result = subprocess.run(
         [
             "treesapp",
@@ -68,7 +64,9 @@ if __name__ == "__main__":
 
     expected_input_type = ".fasta.tar.gz"
     if sequence_clusters_file.endswith(expected_input_type):
-        hyperpackage_manifest["origin"] = sequence_clusters_file[:-len(expected_input_type)]
+        hyperpackage_manifest["origin"] = sequence_clusters_file[
+            : -len(expected_input_type)
+        ]
     else:
         hyperpackage_manifest["origin"] = sequence_clusters_file
 
@@ -77,12 +75,19 @@ if __name__ == "__main__":
     # create a temporary directories for output and running
     with tempfile.TemporaryDirectory() as output_dir, tempfile.TemporaryDirectory() as working_dir:
 
-        print("Note: TreeSAPP may take a long time to retrieve NCBI lineage info for large packages")
+        print(
+            "Note: TreeSAPP may take a long time to retrieve NCBI lineage info for large packages"
+        )
 
         n_sequence_clusters = n_input_fastas(sequence_clusters_file)
 
         os.chdir(working_dir)
-        for seq_cluster_filename, seq_cluster_file in tqdm(extract_input(os.path.join(original_wd, sequence_clusters_file)), desc="Running TreeSAPP create", total=n_sequence_clusters, unit="cluster"):
+        for seq_cluster_filename, seq_cluster_file in tqdm(
+            extract_input(os.path.join(original_wd, sequence_clusters_file)),
+            desc="Running TreeSAPP create",
+            total=n_sequence_clusters,
+            unit="cluster",
+        ):
 
             # write fasta file to disk
             with open(seq_cluster_filename, "wb") as f:
@@ -91,25 +96,34 @@ if __name__ == "__main__":
             # get properties of hyperpackage
             cluster_name = Path(seq_cluster_filename).stem
             ref_pkg_name = next(name_generator)
-            accession_ids = [record.id.split("|")[1] for record in SeqIO.parse(seq_cluster_filename, "fasta")]
+            accession_ids = [
+                record.id.split("|")[1]
+                for record in SeqIO.parse(seq_cluster_filename, "fasta")
+            ]
 
-            hyperpackage_manifest["ref_pkgs"].append({
-                "ref_pkg_name": ref_pkg_name,
-                "exemplar_sequence": cluster_name,
-                "sequences": accession_ids
-            })
+            hyperpackage_manifest["ref_pkgs"].append(
+                {
+                    "ref_pkg_name": ref_pkg_name,
+                    "exemplar_sequence": cluster_name,
+                    "sequences": accession_ids,
+                }
+            )
 
-            run_treesapp(seq_cluster_filename, ref_pkg_name, os.path.join(output_dir, ref_pkg_name))
+            run_treesapp(
+                seq_cluster_filename,
+                ref_pkg_name,
+                os.path.join(output_dir, ref_pkg_name),
+            )
 
         os.chdir(original_wd)
 
         # write manifest file
-        with open(
-            os.path.join(output_dir, "manifest.json"), "w"
-        ) as manifest_f:
+        with open(os.path.join(output_dir, "manifest.json"), "w") as manifest_f:
             json.dump(hyperpackage_manifest, manifest_f)
 
         # put everything in the output archive
         with tarfile.open(hyperpackage_output, "w:gz") as output_tar:
             for file in os.listdir(output_dir):
-                output_tar.add(os.path.join(os.path.join(output_dir, file)), arcname=file)
+                output_tar.add(
+                    os.path.join(os.path.join(output_dir, file)), arcname=file
+                )

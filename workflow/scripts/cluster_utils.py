@@ -4,7 +4,6 @@ import tempfile
 from collections import Counter
 
 from Bio import SeqIO
-from Bio.SeqRecord import SeqRecord
 
 
 def print_cluster_sizes(clusters: dict, max_width: int = 80) -> None:
@@ -22,8 +21,8 @@ def print_cluster_sizes(clusters: dict, max_width: int = 80) -> None:
 
 def filter_by_size(
     clusters: dict,
-    min_cluster_size = None,
-    max_cluster_size = None,
+    min_cluster_size=None,
+    max_cluster_size=None,
 ) -> dict:
     if min_cluster_size is not None:
         clusters = {k: v for k, v in clusters.items() if len(v) >= min_cluster_size}
