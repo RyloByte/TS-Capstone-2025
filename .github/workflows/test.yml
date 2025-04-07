@@ -35,7 +35,7 @@ jobs:
           CONDA_CACHE_NUMBER: 0
 
       - name: Create/update conda environments
-        run:
+        run: |
           conda env update -n snakemake_env -f environment.yaml --prune
           conda env update -n mmseqs2_env -f workflow/envs/mmseqs2.yaml --prune
           conda env update -n treesapp_env -f workflow/envs/treesapp.yaml --prune
