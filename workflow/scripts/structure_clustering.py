@@ -1,15 +1,13 @@
-import os
 import sqlite3
-import tarfile
-import tempfile
-from collections import defaultdict, Counter
+from collections import defaultdict
 
 from Bio import SeqIO
+from cluster_utils import filter_by_size, print_cluster_sizes, save_fasta_clusters
 from snakemake.script import snakemake
 
-
 config = snakemake.config["structure_clustering"]
-MIN_CLUSTER_SIZE = config["min_cluster_size"]
+MIN_CLUSTER_SIZE = config.get("min_cluster_size")
+MAX_CLUSTER_SIZE = config.get("max_cluster_size")
 
 
 if __name__ == "__main__":
@@ -43,26 +41,12 @@ if __name__ == "__main__":
         clusters[repId].append(records[memId])
 
     # print cluster sizes
-    cluster_sizes = Counter(len(cluster) for cluster in clusters.values())
-    max_width = 80
-    most_popular_cluster = max(cluster_sizes.values())
-    multiplier = 1 if most_popular_cluster <= max_width else max_width / most_popular_cluster
-    print("Cluster size / count")
-    for cluster_size, cluster_count in sorted(cluster_sizes.items()):
-        print(f"{cluster_size:3}: {'█' * max(1, int(cluster_count * multiplier))} {cluster_count}")
+    print_cluster_sizes(clusters)
 
     # filter by size
-    clusters = {k: v for k, v in clusters.items() if len(v) >= MIN_CLUSTER_SIZE}
-    print(f"Keeping {len(clusters)} clusters larger than {MIN_CLUSTER_SIZE}")
+    clusters = filter_by_size(
+        clusters, min_cluster_size=MIN_CLUSTER_SIZE, max_cluster_size=MAX_CLUSTER_SIZE
+    )
 
     # create output
-    with tarfile.open(output_archive, "w:gz") as tar:
-        for cluster_id, cluster in clusters.items():
-            with tempfile.NamedTemporaryFile(suffix="fasta", delete=False) as tmp:
-                try:
-                    SeqIO.write(cluster, tmp.name, "fasta")
-                    tmp.close()
-                    tar.add(tmp.name, arcname=f"{cluster_id}.fasta")
-                finally:
-                    if os.path.exists(tmp.name):
-                        os.unlink(tmp.name)
+    save_fasta_clusters(clusters, output_archive)

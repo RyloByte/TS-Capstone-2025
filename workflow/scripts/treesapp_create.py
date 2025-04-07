@@ -1,15 +1,14 @@
 import itertools
 import json
+import os
 import string
-import sys
-
-from snakemake.script import snakemake
 import subprocess
+import sys
 import tarfile
 import tempfile
-import os
 from pathlib import Path
 
+from snakemake.script import snakemake
 
 config = snakemake.config["treesapp_create"]
 extra_args: str = config["extra_args"]
@@ -23,7 +22,9 @@ def ref_pkg_name_generator(n: int):
         yield "".join(combo)
 
 
-def run_treesapp(input_faa: str, ref_pkg_name: str, output_dir: str, taxonomy_file: str) -> None:
+def run_treesapp(
+    input_faa: str, ref_pkg_name: str, output_dir: str, taxonomy_file: str
+) -> None:
     print(f"Running TreeSAPP, input: {input_faa} output: {output_dir}")
 
     result = subprocess.run(
@@ -39,14 +40,16 @@ def run_treesapp(input_faa: str, ref_pkg_name: str, output_dir: str, taxonomy_fi
             "--headless",
             "--seqs2lin",
             taxonomy_file,
-            extra_args
+            extra_args,
         ],
         stdout=sys.stdout if show_treesapp_output else None,
         stderr=sys.stderr if show_treesapp_output else None,
     )
 
     if result.returncode != 0:
-        raise RuntimeError(f"Got non-zero return code from TreeSAPP: {result.returncode}")
+        raise RuntimeError(
+            f"Got non-zero return code from TreeSAPP: {result.returncode}"
+        )
 
 
 if __name__ == "__main__":
@@ -55,19 +58,34 @@ if __name__ == "__main__":
     clusters_archive = Path(snakemake.input[2])
     hyperpackage_output = Path(snakemake.output[0])
 
-    assert swissprot_data_file.suffixes == [".tsv", ".gz"], f"Expected {swissprot_data_file} to be a .tsv.gz swissprot data file"
-    assert swissprot_taxonomy_file.suffixes == [".tsv", ".gz"], f"Expected {swissprot_taxonomy_file} to be a .tsv.gz swissprot taxonomy file"
-    assert clusters_archive.suffixes == [".tar", ".gz"], f"Expected {clusters_archive} to be a .tar.gz clusters archive"
-    assert hyperpackage_output.suffixes == [".tar", ".gz"], f"Expected {hyperpackage_output} to be a .tar.gz hyperpackage output"
-
+    assert swissprot_data_file.suffixes == [
+        ".tsv",
+        ".gz",
+    ], f"Expected {swissprot_data_file} to be a .tsv.gz swissprot data file"
+    assert swissprot_taxonomy_file.suffixes == [
+        ".tsv",
+        ".gz",
+    ], f"Expected {swissprot_taxonomy_file} to be a .tsv.gz swissprot taxonomy file"
+    assert clusters_archive.suffixes == [
+        ".tar",
+        ".gz",
+    ], f"Expected {clusters_archive} to be a .tar.gz clusters archive"
+    assert hyperpackage_output.suffixes == [
+        ".tar",
+        ".gz",
+    ], f"Expected {hyperpackage_output} to be a .tar.gz hyperpackage output"
 
     name_generator = ref_pkg_name_generator(ref_pkg_name_length)
     hyper_package_manifest = {"ref_pkgs": []}
     expected_ending = "-hyperpackage.tar.gz"
     if not hyperpackage_output.name.endswith(expected_ending):
-        print("Got an unexpected hyperpackage output name, can't determine activity number used to create it")
+        print(
+            "Got an unexpected hyperpackage output name, can't determine activity number used to create it"
+        )
     else:
-        hyper_package_manifest["activity_number"] = hyperpackage_output.name[:-len(expected_ending)]
+        hyper_package_manifest["activity_number"] = hyperpackage_output.name[
+            : -len(expected_ending)
+        ]
 
     # create a temporary directory for the output
     with tempfile.TemporaryDirectory() as output_dir:
@@ -85,12 +103,21 @@ if __name__ == "__main__":
                     continue
                 cluster_name = cluster_file.stem
                 pkg_name = next(name_generator)
-                hyper_package_manifest["ref_pkgs"].append({"pkg_name": pkg_name, "exemplar_sequence": cluster_name})
+                hyper_package_manifest["ref_pkgs"].append(
+                    {"pkg_name": pkg_name, "exemplar_sequence": cluster_name}
+                )
 
-                run_treesapp(input_faa=cluster_file.name, ref_pkg_name=pkg_name, output_dir=output_dir, taxonomy_file=swissprot_taxonomy_file.name)
+                run_treesapp(
+                    input_faa=cluster_file.name,
+                    ref_pkg_name=pkg_name,
+                    output_dir=output_dir,
+                    taxonomy_file=swissprot_taxonomy_file.name,
+                )
 
         # write manifest file
-        with open(os.path.join(output_dir, "hyper_package_manifest.json"), "w") as manifest_f:
+        with open(
+            os.path.join(output_dir, "hyper_package_manifest.json"), "w"
+        ) as manifest_f:
             json.dump(hyper_package_manifest, manifest_f)
 
         # put everything in the output archive

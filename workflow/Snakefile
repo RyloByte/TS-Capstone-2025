@@ -7,6 +7,7 @@ rule download_foldseek_database:
         "utils/foldseek_clusters.tsv.gz"
     shell:
         """
+        echo "Downloading FoldSeek clusters..."
         wget -O {output} https://afdb-cluster.steineggerlab.workers.dev/5-allmembers-repId-entryId-cluFlag-taxId.tsv.gz
         """
 
@@ -24,6 +25,7 @@ rule download_swissprot_fasta:
         "utils/uniprot_sprot.fasta.gz"
     shell:
         """
+        echo "Downloading SwissProt Sequences..."
         wget -O {output} ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta.gz
         """
 
@@ -34,6 +36,7 @@ rule download_swissprot_entries_by_activity:  # TODO need to add ability to limi
         activity_type="ec|rhea"
     shell:
         """
+        echo "Querying SwissProt for {wildcards.activity_type} {wildcards.activity_number}..."
         wget -O {output}.gz "https://rest.uniprot.org/uniprotkb/stream?compressed=true&format=fasta&query=%28%28{wildcards.activity_type}%3A{wildcards.activity_number}%29%29+AND+%28reviewed%3Atrue%29"
         gunzip {output}.gz
         """
@@ -55,18 +58,16 @@ rule sequence_clustering:
     input:
         "data/{sample}-structure_clusters.tar.gz"
     output:
-        temp("data/{sample}-sequence_clusters.tar.gz")
+        "data/{sample}-sequence_clusters.tar.gz"
     script:
         "scripts/sequence_clustering.py"
 
-# call TreeSAPP
+# TreeSAPP create
 
 rule treesapp_create:
     conda:
         "envs/treesapp.yaml"
     input:
-        "utils/uniprot_sprot.fasta.gz",
-        "utils/uniprot_sprot.dat.gz",
         "data/{sample}-sequence_clusters.tar.gz"
     output:
         "result/{sample}-hyperpackage.tar.gz"
