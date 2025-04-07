@@ -15,11 +15,11 @@ from snakemake.script import snakemake
 from tqdm.auto import tqdm
 
 config = snakemake.config["sequence_clustering"]
-MUTE_MMSEQS = config["mute_mmseqs"]
-MIN_CLUSTER_SIZE = config.get("min_cluster_size")
-MAX_CLUSTER_SIZE = config.get("max_cluster_size")
+MUTE_MMSEQS = config.get("mute_mmseqs", True)
+MIN_CLUSTER_SIZE = config.get("min_cluster_size", None)
+MAX_CLUSTER_SIZE = config.get("max_cluster_size", None)
 MMSEQS_ARGS = []
-for item in config["mmseqs_args"]:
+for item in config.get("mmseqs_args", []):
     MMSEQS_ARGS += item.split()
 
 mmseqs_output = "output"

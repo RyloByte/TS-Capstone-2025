@@ -8,8 +8,8 @@ from snakemake.script import snakemake
 from tqdm.auto import tqdm
 
 config = snakemake.config["cluster_db"]
-FILTER_BY_SPROT = config["filter_by_sprot"]
-CHUNK_SIZE = config["chunk_size"]
+FILTER_BY_SPROT = config.get("filter_by_sprot", True)
+CHUNK_SIZE = config.get("chunk_size", 10000000)
 
 
 if __name__ == "__main__":

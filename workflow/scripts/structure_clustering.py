@@ -6,8 +6,8 @@ from cluster_utils import filter_by_size, print_cluster_sizes, save_fasta_cluste
 from snakemake.script import snakemake
 
 config = snakemake.config["structure_clustering"]
-MIN_CLUSTER_SIZE = config.get("min_cluster_size")
-MAX_CLUSTER_SIZE = config.get("max_cluster_size")
+MIN_CLUSTER_SIZE = config.get("min_cluster_size", None)
+MAX_CLUSTER_SIZE = config.get("max_cluster_size", None)
 
 
 if __name__ == "__main__":
