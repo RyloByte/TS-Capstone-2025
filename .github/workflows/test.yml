@@ -13,32 +13,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup snakemake environment
+      - name: Setup miniconda
         uses: conda-incubator/setup-miniconda@v3
         with:
           miniconda-version: "latest"
+          activate-environment: snakemake_env
+          environment-file: environment.yaml
           auto-activate-base: false
-
-      - name: Cache conda envs
-        id: conda-env-cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ${{ env.CONDA }}/envs
-            ${{ env.CONDA }}/pkgs
-          key:
-            conda-${{ runner.os }}--${{ runner.arch }}--${{
-            hashFiles('environment.yaml', 'workflow/envs/*') }}-${{
-            env.CONDA_CACHE_NUMBER }}
-        env:
-          # for manually incrementing cache
-          CONDA_CACHE_NUMBER: 0
-
-      - name: Create/update conda environments
-        run: |
-          conda env update -n snakemake_env -f environment.yaml --prune
-          conda env update -n mmseqs2_env -f workflow/envs/mmseqs2.yaml --prune
-          conda env update -n treesapp_env -f workflow/envs/treesapp.yaml --prune
 
       - name: Cache utils
         uses: actions/cache@v4
@@ -54,6 +35,5 @@ jobs:
       - name: Run pytest
         shell: bash -l {0}
         run: |
-          conda activate snakemake_env
           mkdir -p utils
           pytest -s -v
