@@ -60,6 +60,8 @@ if __name__ == "__main__":
 
     # iterate through input
     n_structure_clusters = n_input_fastas(structure_clusters)
+    if n_structure_clusters == 0:
+        raise RuntimeError(f"No structure clusters found in {structure_clusters}")
     for struct_cluster_filename, struct_cluster_file in tqdm(
         extract_input(structure_clusters),
         desc="Running mmseqs2 easy-linclust",

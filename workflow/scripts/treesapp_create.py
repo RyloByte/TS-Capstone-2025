@@ -80,6 +80,8 @@ if __name__ == "__main__":
         )
 
         n_sequence_clusters = n_input_fastas(sequence_clusters_file)
+        if n_sequence_clusters == 0:
+            raise RuntimeError(f"No sequence clusters found in {n_sequence_clusters}")
 
         os.chdir(working_dir)
         for seq_cluster_filename, seq_cluster_file in tqdm(

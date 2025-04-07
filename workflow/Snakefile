@@ -29,7 +29,7 @@ rule download_swissprot_fasta:
         wget -O {output} ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta.gz
         """
 
-rule download_swissprot_entries_by_activity:  # TODO need to add ability to limit size?
+rule download_swissprot_entries_by_activity:
     output:
         "data/{activity_type}_{activity_number}.fasta"
     wildcard_constraints:
@@ -39,6 +39,9 @@ rule download_swissprot_entries_by_activity:  # TODO need to add ability to limi
         echo "Querying SwissProt for {wildcards.activity_type} {wildcards.activity_number}..."
         wget -O {output}.gz "https://rest.uniprot.org/uniprotkb/stream?compressed=true&format=fasta&query=%28%28{wildcards.activity_type}%3A{wildcards.activity_number}%29%29+AND+%28reviewed%3Atrue%29"
         gunzip {output}.gz
+        
+        seq_count=$(grep -c '^>' {output} || echo 0)
+        echo "Downloaded $seq_count sequences for {wildcards.activity_type} {wildcards.activity_number}"
         """
 
 # clustering

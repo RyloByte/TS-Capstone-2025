@@ -23,6 +23,8 @@ if __name__ == "__main__":
     for record in SeqIO.parse(fasta_file, "fasta"):
         uniprot_accession = record.id.split("|")[1]
         records[uniprot_accession] = record
+    if len(records) == 0:
+        raise RuntimeError(f"No sequence records found in {fasta_file}")
 
     # query cluster db for accessions
     print(f"Querying structure cluster db for {len(records)} sequences...")

@@ -2,14 +2,11 @@ cluster_db:
   filter_by_sprot: true
   chunk_size: 10000000
 
-activity_lookup:
-  max_proteins: 1000
-
 structure_clustering:
   min_cluster_size: 5
 
 sequence_clustering:
-  mute_mmseqs: true
+  mute_mmseqs: false
   min_cluster_size: 5
   mmseqs_args: [
     "--min-seq-id 0.9",
@@ -22,5 +19,5 @@ sequence_clustering:
   ]
 
 treesapp_create:
-  mute_treesapp: true
+  mute_treesapp: false
   extra_args: []
