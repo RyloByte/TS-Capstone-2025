@@ -36,4 +36,4 @@ jobs:
         shell: bash -l {0}
         run: |
           mkdir -p utils
-          pytest -s -v
+          pytest -v
