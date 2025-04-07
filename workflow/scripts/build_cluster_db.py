@@ -22,7 +22,7 @@ if __name__ == "__main__":
 
     # load swissprot accessions for filtering
     if FILTER_BY_SPROT:
-        print("Getting SwissProt accessions...")
+        print("Loading SwissProt accessions...")
         with gzip.open(sprot_fasta, "rt") as f:
             swissprot_accessions = set(
                 record.id.split("|")[1] for record in SeqIO.parse(f, "fasta")

@@ -48,7 +48,7 @@ rule structure_clustering:
         "data/{sample}.fasta",
         "utils/cluster_db.sqlite3"
     output:
-        "data/{sample}-structure_clusters.tar.gz"
+        "data/structure_clusters/{sample}.fasta.tar.gz"
     script:
         "scripts/structure_clustering.py"
 
@@ -56,9 +56,9 @@ rule sequence_clustering:
     conda: 
         "envs/mmseqs2.yaml"
     input:
-        "data/{sample}-structure_clusters.tar.gz"
+        "data/structure_clusters/{sample}.fasta.tar.gz"
     output:
-        "data/{sample}-sequence_clusters.tar.gz"
+        "data/sequence_clusters/{sample}.fasta.tar.gz"
     script:
         "scripts/sequence_clustering.py"
 
@@ -68,8 +68,8 @@ rule treesapp_create:
     conda:
         "envs/treesapp.yaml"
     input:
-        "data/{sample}-sequence_clusters.tar.gz"
+        "data/sequence_clusters/{sample}.fasta.tar.gz"
     output:
-        "result/{sample}-hyperpackage.tar.gz"
+        "data/hyperpackages/{sample}.refpkg.tar.gz"
     script:
         "scripts/treesapp_create.py"

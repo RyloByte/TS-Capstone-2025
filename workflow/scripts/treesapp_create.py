@@ -3,124 +3,113 @@ import json
 import os
 import string
 import subprocess
-import sys
 import tarfile
 import tempfile
 from pathlib import Path
 
+from Bio import SeqIO
+from tqdm.auto import tqdm
+
 from snakemake.script import snakemake
 
+from cluster_utils import n_input_fastas, extract_input
+
 config = snakemake.config["treesapp_create"]
-extra_args: str = config["extra_args"]
-ref_pkg_name_length: int = config["ref_pkg_name_length"]
-show_treesapp_output: bool = config["show_treesapp_output"]
+MUTE_TREESAPP = config["mute_treesapp"]
+EXTRA_ARGS = []
+for item in config["extra_args"]:
+    EXTRA_ARGS += item.split()
 
 
-def ref_pkg_name_generator(n: int):
+def ref_pkg_name_generator(n: int = 6):
     characters = string.ascii_uppercase + string.digits
     for combo in itertools.product(characters, repeat=n):
         yield "".join(combo)
 
 
 def run_treesapp(
-    input_faa: str, ref_pkg_name: str, output_dir: str, taxonomy_file: str
+    input_fasta: str, ref_pkg_name: str, output_dir: str
 ) -> None:
-    print(f"Running TreeSAPP, input: {input_faa} output: {output_dir}")
-
     result = subprocess.run(
         [
             "treesapp",
             "create",
             "-i",
-            input_faa,
+            input_fasta,
             "-c",
             ref_pkg_name,
             "-o",
             output_dir,
             "--headless",
-            "--seqs2lin",
-            taxonomy_file,
-            extra_args,
-        ],
-        stdout=sys.stdout if show_treesapp_output else None,
-        stderr=sys.stderr if show_treesapp_output else None,
+        ]
+        + EXTRA_ARGS,
+        stdout=subprocess.PIPE if MUTE_TREESAPP else None,
+        stderr=subprocess.PIPE if MUTE_TREESAPP else None,
     )
 
+    # check result
     if result.returncode != 0:
+        if MUTE_TREESAPP:
+            print(result.stderr)
         raise RuntimeError(
             f"Got non-zero return code from TreeSAPP: {result.returncode}"
         )
 
 
 if __name__ == "__main__":
-    swissprot_data_file = Path(snakemake.input[0])
-    swissprot_taxonomy_file = Path(snakemake.input[1])
-    clusters_archive = Path(snakemake.input[2])
-    hyperpackage_output = Path(snakemake.output[0])
+    # inputs
+    sequence_clusters_file = snakemake.input[0]
 
-    assert swissprot_data_file.suffixes == [
-        ".tsv",
-        ".gz",
-    ], f"Expected {swissprot_data_file} to be a .tsv.gz swissprot data file"
-    assert swissprot_taxonomy_file.suffixes == [
-        ".tsv",
-        ".gz",
-    ], f"Expected {swissprot_taxonomy_file} to be a .tsv.gz swissprot taxonomy file"
-    assert clusters_archive.suffixes == [
-        ".tar",
-        ".gz",
-    ], f"Expected {clusters_archive} to be a .tar.gz clusters archive"
-    assert hyperpackage_output.suffixes == [
-        ".tar",
-        ".gz",
-    ], f"Expected {hyperpackage_output} to be a .tar.gz hyperpackage output"
+    # outputs
+    hyperpackage_output = snakemake.output[0]
 
-    name_generator = ref_pkg_name_generator(ref_pkg_name_length)
-    hyper_package_manifest = {"ref_pkgs": []}
-    expected_ending = "-hyperpackage.tar.gz"
-    if not hyperpackage_output.name.endswith(expected_ending):
-        print(
-            "Got an unexpected hyperpackage output name, can't determine activity number used to create it"
-        )
+    name_generator = ref_pkg_name_generator()
+    hyperpackage_manifest = {"ref_pkgs": []}
+
+    expected_input_type = ".fasta.tar.gz"
+    if sequence_clusters_file.endswith(expected_input_type):
+        hyperpackage_manifest["origin"] = sequence_clusters_file[:-len(expected_input_type)]
     else:
-        hyper_package_manifest["activity_number"] = hyperpackage_output.name[
-            : -len(expected_ending)
-        ]
+        hyperpackage_manifest["origin"] = sequence_clusters_file
 
-    # create a temporary directory for the output
-    with tempfile.TemporaryDirectory() as output_dir:
+    original_wd = os.getcwd()
 
-        # extract the sequences from input
-        with tempfile.TemporaryDirectory() as extracted_input:
-            with tarfile.open(clusters_archive, "r:gz") as tar:
-                tar.extractall(path=extracted_input)
+    # create a temporary directories for output and running
+    with tempfile.TemporaryDirectory() as output_dir, tempfile.TemporaryDirectory() as working_dir:
 
-            # iterate through each faa file
-            for cluster_file in os.listdir(extracted_input):
-                cluster_file = Path(cluster_file)
-                if cluster_file.suffix != ".faa":
-                    print(f"Skipping non-faa file: {cluster_file}")
-                    continue
-                cluster_name = cluster_file.stem
-                pkg_name = next(name_generator)
-                hyper_package_manifest["ref_pkgs"].append(
-                    {"pkg_name": pkg_name, "exemplar_sequence": cluster_name}
-                )
+        print("Note: TreeSAPP may take a long time to retrieve NCBI lineage info for large packages")
 
-                run_treesapp(
-                    input_faa=cluster_file.name,
-                    ref_pkg_name=pkg_name,
-                    output_dir=output_dir,
-                    taxonomy_file=swissprot_taxonomy_file.name,
-                )
+        n_sequence_clusters = n_input_fastas(sequence_clusters_file)
+
+        os.chdir(working_dir)
+        for seq_cluster_filename, seq_cluster_file in tqdm(extract_input(os.path.join(original_wd, sequence_clusters_file)), desc="Running TreeSAPP create", total=n_sequence_clusters, unit="cluster"):
+
+            # write fasta file to disk
+            with open(seq_cluster_filename, "wb") as f:
+                f.write(seq_cluster_file.read())
+
+            # get properties of hyperpackage
+            cluster_name = Path(seq_cluster_filename).stem
+            ref_pkg_name = next(name_generator)
+            accession_ids = [record.id.split("|")[1] for record in SeqIO.parse(seq_cluster_filename, "fasta")]
+
+            hyperpackage_manifest["ref_pkgs"].append({
+                "ref_pkg_name": ref_pkg_name,
+                "exemplar_sequence": cluster_name,
+                "sequences": accession_ids
+            })
+
+            run_treesapp(seq_cluster_filename, ref_pkg_name, os.path.join(output_dir, ref_pkg_name))
+
+        os.chdir(original_wd)
 
         # write manifest file
         with open(
-            os.path.join(output_dir, "hyper_package_manifest.json"), "w"
+            os.path.join(output_dir, "manifest.json"), "w"
         ) as manifest_f:
-            json.dump(hyper_package_manifest, manifest_f)
+            json.dump(hyperpackage_manifest, manifest_f)
 
         # put everything in the output archive
         with tarfile.open(hyperpackage_output, "w:gz") as output_tar:
             for file in os.listdir(output_dir):
-                tar.add(os.path.join(os.path.join(output_dir, file)), arcname=file)
+                output_tar.add(os.path.join(os.path.join(output_dir, file)), arcname=file)

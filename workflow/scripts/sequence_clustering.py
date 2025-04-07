@@ -1,11 +1,10 @@
 import os
 import subprocess
-import tarfile
 import tempfile
 
 import pandas as pd
 from Bio import SeqIO
-from cluster_utils import filter_by_size, print_cluster_sizes, save_fasta_clusters
+from cluster_utils import filter_by_size, print_cluster_sizes, save_fasta_clusters, n_input_fastas, extract_input
 from snakemake.script import snakemake
 from tqdm.auto import tqdm
 
@@ -21,24 +20,28 @@ mmseqs_output = "output"
 mmseqs_tmp = "tmp"
 
 
-def n_input_fastas(archive_path: str) -> int:
-    i = 0
-    with tarfile.open(archive_path, "r:gz") as tar:
-        for member in tar:
-            if member.isfile() and (
-                member.name.endswith(".fasta") or member.name.endswith(".faa")
-            ):
-                i += 1
-    return i
+def run_mmseqs(input_fasta: str, output_name: str, temp_name: str) -> None:
+    result = subprocess.run(
+        [
+            "mmseqs",
+            "easy-linclust",
+            input_fasta,
+            output_name,
+            temp_name,
+        ]
+        + MMSEQS_ARGS,
+        stdout=subprocess.PIPE if MUTE_MMSEQS else None,
+        stderr=subprocess.PIPE if MUTE_MMSEQS else None,
+        text=True,
+    )
 
-
-def extract_input(archive_path: str):
-    with tarfile.open(archive_path, "r:gz") as tar:
-        for member in tar:
-            if member.isfile() and (
-                member.name.endswith(".fasta") or member.name.endswith(".faa")
-            ):
-                yield member.name, tar.extractfile(member)
+    # check result
+    if result.returncode != 0:
+        if MUTE_MMSEQS:
+            print(result.stderr)
+        raise RuntimeError(
+            f"mmseqs easy-linclust failed with code {result.returncode}"
+        )
 
 
 if __name__ == "__main__":
@@ -75,27 +78,7 @@ if __name__ == "__main__":
                 records[uniprot_accession] = record
 
             # run mmseqs
-            result = subprocess.run(
-                [
-                    "mmseqs",
-                    "easy-linclust",
-                    struct_cluster_filename,
-                    mmseqs_output,
-                    mmseqs_tmp,
-                ]
-                + MMSEQS_ARGS,
-                stdout=subprocess.PIPE if MUTE_MMSEQS else None,
-                stderr=subprocess.PIPE if MUTE_MMSEQS else None,
-                text=True,
-            )
-
-            # check result
-            if result.returncode != 0:
-                if MUTE_MMSEQS:
-                    print(result.stderr)
-                raise RuntimeError(
-                    f"mmseqs easy-linclust failed with code {result.returncode}"
-                )
+            run_mmseqs(struct_cluster_filename, mmseqs_output, mmseqs_tmp)
 
             # save clusters
             result = pd.read_csv(

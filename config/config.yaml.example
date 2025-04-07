@@ -20,3 +20,7 @@ sequence_clustering:
     "--alignment-mode 3",
     "--realign 1"
   ]
+
+treesapp_create:
+  mute_treesapp: true
+  extra_args: []
