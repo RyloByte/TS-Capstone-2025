@@ -4,7 +4,7 @@ configfile: "config.yaml"
 
 rule download_foldseek_database:
     output:
-        temp("utils/foldseek_clusters.tsv.gz")
+        "utils/foldseek_clusters.tsv.gz"
     shell:
         """
         echo "Downloading FoldSeek clusters..."
