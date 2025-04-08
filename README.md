@@ -13,7 +13,7 @@ The motivation for this is to create phylogenetic trees centered around some fun
 flowchart TD
     A([Start])
     B(Functionally Homologous Fasta)
-    B-->C[Structure Clustering]
+    B-->C[Structure Cluster Lookup]
     C-->D(Structure Clusters)
     D-->E[MMSEQS2 Sequence Clustering]
     E-->F(Sequence Clusters)
@@ -32,6 +32,10 @@ flowchart TD
     M-->B
     A-->M
 ```
+
+**NOTE:** The `Functionally Homologous Fasta` can be any list of sequences. This workflow can automatically grab SwissProt
+fastas based on an activity number, but you can put any SwissProt fasta file you want there (it just needs to have the
+SwissProt accession ID format).
 
 A "hyperpackage" is an archive of several regular TreeSAPP reference packages, each generated from a separate cluster of sequences. **TODO ADD MORE ABOUT THE USAGE OF HYPERPACKAGES**
 

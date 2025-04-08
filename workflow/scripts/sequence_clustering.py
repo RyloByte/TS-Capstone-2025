@@ -3,7 +3,6 @@ import subprocess
 import tempfile
 
 import pandas as pd
-from Bio import SeqIO
 from cluster_utils import (
     extract_input,
     filter_by_size,
@@ -13,6 +12,7 @@ from cluster_utils import (
 )
 from snakemake.script import snakemake
 from tqdm.auto import tqdm
+from uniprot_utils import UniprotFastaParser
 
 config = snakemake.config["sequence_clustering"]
 MUTE_MMSEQS = config["mute_mmseqs"]
@@ -78,10 +78,10 @@ if __name__ == "__main__":
                 f.write(struct_cluster_file.read())
 
             # get the records from that file
-            records = {}
-            for record in SeqIO.parse(struct_cluster_filename, "fasta"):
-                uniprot_accession = record.id.split("|")[1]
-                records[uniprot_accession] = record
+            records = {
+                accession: record
+                for accession, record in UniprotFastaParser(struct_cluster_filename)
+            }
 
             # run mmseqs
             run_mmseqs(struct_cluster_filename, mmseqs_output, mmseqs_tmp)

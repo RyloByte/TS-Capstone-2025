@@ -23,7 +23,7 @@ rule build_cluster_db:
 
 rule download_swissprot_fasta:
     output:
-        temp("utils/uniprot_sprot.fasta.gz")
+        "utils/uniprot_sprot.fasta.gz"
     shell:
         """
         echo "Downloading SwissProt Sequences..."
@@ -44,7 +44,7 @@ rule download_swissprot_entries_by_activity:
         gunzip {output}.gz
         
         seq_count=$(grep -c '^>' {output} || echo 0)
-        echo "Downloaded $seq_count sequences for {wildcards.activity_type} {wildcards.activity_number}"
+        echo "Downloaded $seq_count sequences to {output}"
         """
 
 rule unzip_fasta:
@@ -62,7 +62,8 @@ rule unzip_fasta:
 rule structure_clustering:
     input:
         "data/{sample}.fasta",
-        "utils/cluster_db.sqlite3"
+        "utils/cluster_db.sqlite3",
+        "utils/uniprot_sprot.fasta.gz"
     output:
         "data/structure_clusters/{sample}.fasta.tar.gz"
     script:

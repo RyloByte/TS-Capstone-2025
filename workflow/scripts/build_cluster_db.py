@@ -1,11 +1,10 @@
-import gzip
 import os
 import sqlite3
 
 import pandas as pd
-from Bio import SeqIO
 from snakemake.script import snakemake
 from tqdm.auto import tqdm
+from uniprot_utils import UniprotFastaParser
 
 config = snakemake.config["cluster_db"]
 FILTER_BY_SPROT = config["filter_by_sprot"]
@@ -22,11 +21,9 @@ if __name__ == "__main__":
 
     # load swissprot accessions for filtering
     if FILTER_BY_SPROT:
-        print("Loading SwissProt accessions...")
-        with gzip.open(sprot_fasta, "rt") as f:
-            swissprot_accessions = set(
-                record.id.split("|")[1] for record in SeqIO.parse(f, "fasta")
-            )
+        swissprot_accessions = set(
+            accession for accession, _ in tqdm(UniprotFastaParser(sprot_fasta), desc="Loading SwissProt accessions", unit="records")
+        )
     else:
         print(
             "Building database with ALL FoldSeek entries... (this will take a long time)"

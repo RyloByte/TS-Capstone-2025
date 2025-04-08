@@ -7,10 +7,10 @@ import tarfile
 import tempfile
 from pathlib import Path
 
-from Bio import SeqIO
 from cluster_utils import extract_input, n_input_fastas
 from snakemake.script import snakemake
 from tqdm.auto import tqdm
+from uniprot_utils import UniprotFastaParser
 
 config = snakemake.config["treesapp_create"]
 MUTE_TREESAPP = config["mute_treesapp"]
@@ -63,12 +63,13 @@ if __name__ == "__main__":
     hyperpackage_manifest = {"ref_pkgs": []}
 
     expected_input_type = ".fasta.tar.gz"
-    if sequence_clusters_file.endswith(expected_input_type):
-        hyperpackage_manifest["origin"] = sequence_clusters_file[
+    basename = os.path.basename(sequence_clusters_file)
+    if basename.endswith(expected_input_type):
+        hyperpackage_manifest["origin"] = basename[
             : -len(expected_input_type)
         ]
     else:
-        hyperpackage_manifest["origin"] = sequence_clusters_file
+        hyperpackage_manifest["origin"] = basename
 
     original_wd = os.getcwd()
 
@@ -99,8 +100,7 @@ if __name__ == "__main__":
             cluster_name = Path(seq_cluster_filename).stem
             ref_pkg_name = next(name_generator)
             accession_ids = [
-                record.id.split("|")[1]
-                for record in SeqIO.parse(seq_cluster_filename, "fasta")
+                accession for accession, _ in UniprotFastaParser(seq_cluster_filename)
             ]
 
             hyperpackage_manifest["ref_pkgs"].append(
