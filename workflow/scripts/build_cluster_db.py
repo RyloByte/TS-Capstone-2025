@@ -22,7 +22,12 @@ if __name__ == "__main__":
     # load swissprot accessions for filtering
     if FILTER_BY_SPROT:
         swissprot_accessions = set(
-            accession for accession, _ in tqdm(UniprotFastaParser(sprot_fasta), desc="Loading SwissProt accessions", unit="records")
+            accession
+            for accession, _ in tqdm(
+                UniprotFastaParser(sprot_fasta),
+                desc="Loading SwissProt accessions",
+                unit="records",
+            )
         )
     else:
         print(

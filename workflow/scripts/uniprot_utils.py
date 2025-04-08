@@ -25,7 +25,7 @@ class UniprotFastaParser:
                 shell=True,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                text=True
+                text=True,
             )
             if result.returncode == 0:
                 self.n_records = int(result.stdout.strip())
@@ -35,7 +35,11 @@ class UniprotFastaParser:
             self.handle = None
             self.parser = SeqIO.parse(fasta_file, "fasta")
             result = subprocess.run(
-                [f"grep -c '^>' {fasta_file}"], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+                [f"grep -c '^>' {fasta_file}"],
+                shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
             )
             if result.returncode == 0:
                 self.n_records = int(result.stdout.strip())

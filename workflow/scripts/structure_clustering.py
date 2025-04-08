@@ -28,12 +28,17 @@ if __name__ == "__main__":
         raise RuntimeError(f"No sequence records found in {fasta_file}")
 
     # query cluster db for accessions
-    print(f"Querying structure cluster db for {len(records)} sequences in {fasta_file}...")
+    print(
+        f"Querying structure cluster db for {len(records)} sequences in {fasta_file}..."
+    )
     conn = sqlite3.connect(cluster_db)
     placeholders = ",".join(["?"] * len(records))
     query = f"SELECT DISTINCT repId FROM clusters WHERE memId in ({placeholders})"
 
-    cluster_ids = [cluster_id[0] for cluster_id in conn.execute(query, list(records.keys())).fetchall()]
+    cluster_ids = [
+        cluster_id[0]
+        for cluster_id in conn.execute(query, list(records.keys())).fetchall()
+    ]
 
     placeholders = ",".join(["?"] * len(cluster_ids))
     query = f"SELECT repId, memId FROM clusters WHERE repId in ({placeholders})"

@@ -65,9 +65,7 @@ if __name__ == "__main__":
     expected_input_type = ".fasta.tar.gz"
     basename = os.path.basename(sequence_clusters_file)
     if basename.endswith(expected_input_type):
-        hyperpackage_manifest["origin"] = basename[
-            : -len(expected_input_type)
-        ]
+        hyperpackage_manifest["origin"] = basename[: -len(expected_input_type)]
     else:
         hyperpackage_manifest["origin"] = basename
 
