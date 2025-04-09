@@ -22,14 +22,14 @@ def print_cluster_sizes(
             and min_cluster_size is not None
             and cluster_size >= min_cluster_size
         ):
-            print(f"=========== MIN CLUSTER SIZE: {min_cluster_size} ===========")
+            print(f"<----------- MIN CLUSTER SIZE: {min_cluster_size} ----------->")
             printed_min = True
         if (
             not printed_max
             and max_cluster_size is not None
             and cluster_size > max_cluster_size
         ):
-            print(f"=========== MAX CLUSTER SIZE: {max_cluster_size} ===========")
+            print(f"<----------- MAX CLUSTER SIZE: {max_cluster_size} ----------->")
             printed_max = True
         print(
             f"{cluster_size:3}: {'█' * max(1, int(cluster_count * multiplier))} {cluster_count}"
