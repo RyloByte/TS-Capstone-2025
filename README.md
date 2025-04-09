@@ -1,156 +1,111 @@
-# TreeSAPP Hyperpackage Workflow
+# TreeSAPP Functional Packages Extension
 
-This is a [snakemake](https://snakemake.github.io/) workflow project that aims to extend the functionality of
-[TreeSAPP](https://github.com/hallamlab/TreeSAPP) to create [reference packages](https://github.com/hallamlab/TreeSAPP/wiki/Building-reference-packages-with-TreeSAPP#step-2-creating-the-reference-package)
-(phylogentic trees) based on functional homology via Rhea ID, EC number, or other groupings rather than from manually
-curated collections of protein sequences. 
+This is a [snakemake](https://snakemake.github.io/) workflow project that extends the functionality of
+[TreeSAPP](https://github.com/hallamlab/TreeSAPP) to create composite [reference packages](https://github.com/hallamlab/TreeSAPP/wiki/Building-reference-packages-with-TreeSAPP#step-2-creating-the-reference-package)
+(phylogentic trees + other tools) based on functional homology via Rhea ID, EC number, or other groupings rather than from manually
+curated collections of protein sequences.
 
-This workflow can:
+The motivation for this is to create phylogenetic trees centered around some functionality **TODO ADD MORE**
 
-1. Generate a collection of proteins from a Rhea ID or EC number
-2. Cluster a collection of proteins that would not be suitable to create one reference package into several clusters suitable for creating reference packages, first by structural similarity then sequence similarity
-3. Create a "hyperpackage" (collection of TreeSAPP reference packages) from clustered proteins
-
-In the future this workflow should:
-
-1. Support querying a hyperpackage via structural data
-
-# Installation:
-
-This workflow requires [Anaconda/Miniconda](https://www.anaconda.com/docs/getting-started/miniconda/install). 
-
-1. Clone repository/download workflow code
-2. Create conda environment with `conda env create -f environment.yaml`
-3. Activate environment with `conda activate snakemake_env`
-
-After updating the project, update potential dependency changes with `conda env update --file environment.yaml`.
-
-# Usage:
-
-With snakemake you request a file(s), and the workflow will attempt to use available files and run steps to create that
-file(s). A typical example in this project would be `snakemake --use-conda result/ec_3.4.1.2-hyperpackage.tar.gz` to create a
-hyperpackage from the EC number 3.4.1.2. The `--use-conda` flag is required in this workflow for intermediate tools to
-work.
-
-## Hyperpackage create process
-
-The following flowchart describes the workflow. If you run the workflow requesting a file like `snakemake --use-conda result/test-hyperpackage.tar.gz`,
-snakemake will try to produce it using the `TreeSAPP create` step, and check if the file `test-sequence_clusters.tar.gz`
-exists, and if not create it using the `Sequence Clustering` step and so on. You can request or provide a file from any
-point in the process, and snakemake will attempt to reuse existing intermediate files. 
+## Workflow Overview
 
 ```mermaid
 flowchart TD
-    A@{ shape: processes, label: "{sample}-hyperpackage.tar.gz" }
-    B@{ shape: processes, label: "{sample}-sequence_clusters.tar.gz" }
-    C@{ shape: processes, label: "{sample}-structure_clusters.tar.gz" }
-    D@{ shape: process, label: "{sample}-uniprot_mapped.faa" }
-
-    E@{ shape: cyl, label: "SwissProt DB" }
-    G@{ shape: cyl, label: "Alphafold DB" }
-
-    H@{ shape: hex, label: "TreeSAPP create" }
-    I@{ shape: hex, label: "Sequence Clustering" }
-    J@{ shape: hex, label: "Structure Clustering" }
-
-    H-->A
-    B-->H
-    I-->B
-    C-->I
-    J-->C
-    D-->J
-
-    G-->J
-    E-->H
-
-    K@{ shape: hex, label: "Download SwissProt DB" }
-    L@{ shape: hex, label: "Download Alphafold DB" }
-
-    K-->E
-    L-->G
-```
-
-## User inputs
-
-The following flowchart describes ways users might interact with the workflow. A `.faa` file with functionally
-homologous proteins can be generated with either a Rhea activity ID or EC number. These values can be passed by
-requesting something like `snakemake --use-conda result/ec_1.1.1.1-hyperpackage.tar.gz`, which will eventually request a
-`data/ec_1.1.1.1-uinprot_mapped.faa` file. Rhea IDs are supported in the format `rhea_XXXXX`, and EC numbers in the format
-`ec_X.X.X.X`, with more general forms like `ec_X.X` also being valid. There is a config option for capping the number of
-homologous proteins gathered. 
-
-A user can also directly provide sequences in `data/{sample}.faa`. These sequences must either already have Uniprot
-accession IDs, or use another ID in a standard format that can be mapped to Uniprot. *This currently does not work, check*
-[#19](https://github.com/RyloByte/TS-Capstone-2025/issues/19).
-
-If at any point the workflow needs a `.fasta` file to be renamed to a `.faa` file it will copy the file with a `.faa`
-extension and then delete it at the end of the workflow if it was an intermediate file. 
-
-```mermaid
-flowchart TD
-    A@{ shape: process, label: "{sample}.fasta" }
-    B@{ shape: process, label: "{sample}.faa" }
-    C@{ shape: hex, label: "Rename Fasta" }
-
-    A-->C
-    C-->B
-
-    D@{ shape: process, label: "ec_{num}-uniprot_mapped.faa" }
-    E@{ shape: processes, label: "ec_{num}-hyperpackage.tar.gz" }
-    F@{ shape: hex, label: "EC Homologous Proteins" }
-
-    F-->D
-    D-. hyperpackage process .->E
-
-    G@{ shape: process, label: "rhea_{num}-uniprot_mapped.faa" }
-    H@{ shape: processes, label: "rhea_{num}-hyperpackage.tar.gz" }
-    I@{ shape: hex, label: "Rhea Homologous Proteins" }
-
-    I-->G
-    G-. hyperpackage process .->H
-
-    J@{ shape: cyl, label: "SwissProt DB" }
-    K@{ shape: cyl, label: "SwissProt Sequences" }
-
-    J-->F
-    K-->F
-
-    J-->I
-    K-->I
-
-    L@{ shape: hex, label: "Download SwissProt DB" }
-    M@{ shape: hex, label: "Download SwissProt Sequences" }
-
+    A([Start])
+    B(Functionally Homologous Fasta)
+    B-->C[Structure Cluster Lookup]
+    C-->D(Structure Clusters)
+    D-->E[MMSEQS2 Sequence Clustering]
+    E-->F(Sequence Clusters)
+    F-->G[TreeSAPP Create]
+    G-->H(Reference Packages aka Hyperpackage)
+    H-->I([End])
+    
+    J[(Cluster Index)]
+    K[(FoldSeek Cluster DB)]
+    L(SwissProt Sequences)
+    K-->J
     L-->J
-    M-->K
+    J-->C
+    
+    M[SwissProt Activity Query]
+    M-->B
+    A-->M
 ```
 
-# Hyperpackages
+**NOTE:** The `Functionally Homologous Fasta` can be any list of sequences. This workflow can automatically grab SwissProt
+fastas based on an activity number, but you can put any SwissProt fasta file you want there (it just needs to have the
+SwissProt accession ID format).
 
-### TODO - need more info here
+A "hyperpackage" is an archive of several regular TreeSAPP reference packages, each generated from a separate cluster of sequences. **TODO ADD MORE ABOUT THE USAGE OF HYPERPACKAGES**
 
-A hyperpackage is a collection of TreeSAPP reference packages. 
+# Setup
 
-# Tests
+This workflow requires [Conda](https://www.anaconda.com/docs/getting-started/miniconda/install) and uses tools for Linux/Mac.
 
-## Running
+1. Clone the repository
+2. Create the conda environment via `conda env create -f environment.yaml`
+3. Copy the config file `config.yaml.example` to `config.yaml`
 
-The tests for this project can be run via `pytest`. They can be run in parallel to save time by `pytest -n auto`,
-however if you have not previously run steps to download things like SwissProt data and sequences, you may have
-multiple tests attempt to download them at the same time which may not work.
+**NOTE:** Due to the [conda TreeSAPP dependency](https://anaconda.org/bioconda/treesapp), this workflow currently cannot run natively on ARM (M1/2/etc.) based Macs.
 
-## Creating a test
+# Usage
 
-This project primarily uses a scenario based testing framework. This means that each test will be automatically generated from an
-`initial_state/` and a `final_state/` in `scenarios_dir/scenario/`. Tests for successful workflow runs are located in
-`tests/successful_scenarios/`. Tests for expected failed scenarios are found in `tests/failing_scenarios/`.
+## Create Hyperpackage by Activity Number Lookup
 
-A scenario test runs by:
+Since this project is snakemake based, run snakemake with the files you would like to create. This workflow will create
+hyperpackages in the format `data/hyperpackages/<ec|rhea>_<activity number>.refpkg.tar.gz`. If you want to create a
+hyperpackage for EC activity number 2.7.10.1, run the following command:
 
-1. Running the test in an isolated environment
-2. Copying the contents of `intial_state/` to the isolated environment
-3. Linking the contents of `workflow/` and `utils/` to the isolated environment
-4. If no `config/` directory is provided in the `initial_state/`, copy the items from the top level `config/` directory that end with `.example` (use the default config values)
-5. Run snakemake, requesting every file in the `final_state/` directory
-6. Verify that snakemake exited normally (verify that it did not exit normally for failure tests)
-7. (Successful scenarios only) Go through each file in `final_state/`, check that it has been created by the workflow, and compare the contents in a platform independent way
+```shell
+conda activate snakemake_env
+snakemake --use-conda data/hyperpackages/ec_2.7.10.1.refpgk.tar.gz
+```
+
+You can similarly create a Rhea ID hyperpackage like:
+
+```shell
+snakemake --use-conda data/hyperpackage/rhea_10596.refpkg.tar.gz
+```
+
+General EC numbers like `2.7.10` or `2.7` etc. are also supported.
+
+## Create by Other Sequences
+
+You can also create a hyperpackage from any set of SwissProt sequences, not just a group based on functional activity number!
+To do so use the [UniProtKB search tool](https://www.uniprot.org/), select `Reviewed (Swiss-Prot)` in the top left under
+`Status`, and then click `Download(...)`, and select format `FASTA (canonical)` (compressed or uncompressed is fine). Put
+the `.fasta` or `.fasta.gz` in `data/` and then request the resulting files. Ex. download `my_seqs.fasta`, move it to
+`data/my_seqs.fasta`, and make a hyperpackage by:
+
+```shell
+snakemake --use-conda data/hyperpackages/my_seqs.refpkg.tar.gz
+```
+
+## Logistics
+
+The `--use-conda` flag is required for the underlying tools to work.
+
+You can also request any intermediate file such as:
+
+```shell
+snakemake --use-conda data/structure_clusters/rhea_10596.tar.gz
+```
+
+The first time you run the workflow some extra time may be taken to initially build files, but subsequent runs should
+only take a few minutes for average to smaller groups of sequences.
+
+This program creates files in:
+
+```
+utils/                     <-- utility files for building clusters etc.
+data/                      <-- SwissProt .fasta files of functionally homologous proteins
+data/structure_clusters/   <-- .tar.gz archives of .fasta files broken up by structure cluster
+data/sequence_clusters/    <-- .tar.gz archives of .fasta files broken up by sequence cluster
+data/hyperpackages/        <-- .tar.gz archives of reference packages made from clusters
+```
+
+# Configuration
+
+Inside the `config.yaml` file you will find options that can alter the behavior and results of the workflow with descriptions.
+Among these are extra arguments to pass to `mmseqs2 easy-linclust` and `treesapp create`.

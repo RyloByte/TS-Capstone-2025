@@ -1,128 +1,113 @@
-from snakemake.script import snakemake
-from Bio import SeqIO
 import os
-import tarfile
 import subprocess
-from collections import defaultdict
-import re
+import tempfile
+
+import pandas as pd
+from cluster_utils import (
+    extract_input,
+    filter_by_size,
+    n_input_fastas,
+    print_cluster_sizes,
+    save_fasta_clusters,
+)
+from snakemake.script import snakemake
+from tqdm.auto import tqdm
+from uniprot_utils import UniprotFastaParser
+
+config = snakemake.config["sequence_clustering"]
+MUTE_MMSEQS = config["mute_mmseqs"]
+MIN_CLUSTER_SIZE = config["min_cluster_size"]
+MAX_CLUSTER_SIZE = config["max_cluster_size"]
+MMSEQS_ARGS = []
+for item in config["mmseqs_args"]:
+    MMSEQS_ARGS += item.split()
+
+mmseqs_output = "output"
+mmseqs_tmp = "tmp"
 
 
-MIN_SEQ_ID = snakemake.config["sequence_clustering"]["min_seq_id"]
-MIN_SEQ_COV = snakemake.config["sequence_clustering"]["min_seq_cov"]
-COV_MODE = snakemake.config["sequence_clustering"]["cov_mode"]
-K_LENGTH = snakemake.config["sequence_clustering"]["k_length"]
-KMER_PER_SEQ = snakemake.config["sequence_clustering"]["kmer_per_seq"]
-THREADS = snakemake.config["sequence_clustering"]["threads"]
-SHUFFLE = snakemake.config["sequence_clustering"]["shuffle"]
-HASH_SHIFT = snakemake.config["sequence_clustering"]["hash_shift"]
-REMOVE_TMP_FILES = snakemake.config["sequence_clustering"]["remove_tmp_files"]
-FORCE_REUSE_TMP = snakemake.config["sequence_clustering"]["force_reuse_tmp"]
-ALIGNMENT_MODE = snakemake.config["sequence_clustering"]["alignment_mode"]
-SIMILARITY_TYPE = snakemake.config["sequence_clustering"]["similarity_type"]
-REALIGN = snakemake.config["sequence_clustering"]["realign"]
-SPACED_KMER_MODE = snakemake.config["sequence_clustering"]["spaced_kmer_mode"]
-REMOVE_OUTPUT_FILES = snakemake.config["sequence_clustering"]["remove_output_files"]
+def run_mmseqs(input_fasta: str, output_name: str, temp_name: str) -> None:
+    result = subprocess.run(
+        [
+            "mmseqs",
+            "easy-linclust",
+            input_fasta,
+            output_name,
+            temp_name,
+        ]
+        + MMSEQS_ARGS,
+        stdout=subprocess.PIPE if MUTE_MMSEQS else None,
+        stderr=subprocess.PIPE if MUTE_MMSEQS else None,
+        text=True,
+    )
 
+    # check result
+    if result.returncode != 0:
+        if MUTE_MMSEQS:
+            print(result.stderr)
+        raise RuntimeError(f"mmseqs easy-linclust failed with code {result.returncode}")
 
-def parse_cluster_tsv(cluster_file):
-    cluster_map = defaultdict(list)
-    
-    with open(cluster_file, "r") as file:
-        for line in file:
-            cluster_id, sequence_id = line.strip().split("\t")
-            cluster_map[cluster_id].append(sequence_id)
-
-    return cluster_map
-
-def extract_sequences(fasta_file):
-    sequences = {}
-    
-    for record in SeqIO.parse(fasta_file, "fasta"):
-        sequences[record.id] = record
-    
-    return sequences
-
-def write_cluster_files(cluster_map, sequences, output_dir, sample_name):
-    os.makedirs(output_dir, exist_ok=True)
-    
-    for cluster_id, seq_ids in cluster_map.items():
-        output_file = os.path.join(output_dir, f"{sample_name}-{cluster_id}-sequence_cluster.faa")
-        
-        with open(output_file, "w") as f:
-            for seq_id in seq_ids:
-                if seq_id in sequences:
-                    SeqIO.write(sequences[seq_id], f, "fasta")
-
-def extract_tar_gz(archive_path, extract_to="./data/inputs"):
-    with tarfile.open(archive_path, "r:gz") as tar:
-        os.makedirs(extract_to, exist_ok=True)
-        tar.extractall(path=extract_to)
-
-def compress_cluster_files(output_tar_path, cluster_dir):
-    with tarfile.open(output_tar_path, "w:gz") as tar:
-        for file in os.listdir(cluster_dir):
-            if file.endswith(".faa"):
-                file_path = os.path.join(cluster_dir, file)
-                tar.add(file_path, arcname=file)  # Add file to archive
-
-# snakemake.input[0] = "data/{sample}-structure_clusters.tar.gz" , fill with {0..n}.faa
-# snakemake.output[0] = "data/{sample}-sequence_clusters.tar.gz", fill with {0..n}.faa
 
 if __name__ == "__main__":
-    extract_path = "./data/inputs"
-    extract_tar_gz(snakemake.input[0], extract_path)
+    # inputs
+    structure_clusters = snakemake.input[0]
 
-    output_path = "./data/outputs"
-    tmp_dir = "./data/tmp"
-    tmp_cluster_dir = "./data/cluster_splits"
-    final_output = f"./data"
+    # outputs
+    output_archive = snakemake.output[0]
 
-    for file in os.listdir(extract_path):
-        os.makedirs(output_path, exist_ok=True)
-        os.makedirs(tmp_dir, exist_ok=True)
-        os.makedirs(tmp_cluster_dir, exist_ok=True)
+    clusters = {}
+    original_wd = os.getcwd()
 
-        if file.startswith("._"):
-            continue
-        filepath = os.path.join(extract_path, file)
-        filename = file.rsplit("-", 1)[0]
-        # subprocess.run(["mmseqs", "easy-linclust", os.path.join(extract_path, file), f"{output_path}/{filename}-sequence_clusters", tmp_dir, "--min-seq-id", f"{MIN_SEQ_ID}", "--min-seq-cov", f"{MIN_SEQ_COV}", "--cov-mode", f"{COV_MODE}", "-k", f"{K_LENGTH}", "--threads", f"{THREADS}", "shuffle", f"{SHUFFLE}"])
-        subprocess.run([
-                        "mmseqs", "easy-linclust", 
-                        os.path.join(extract_path, file), 
-                        f"{output_path}/{filename}-sequence_clusters", 
-                        tmp_dir,
-                        "--min-seq-id", f"{MIN_SEQ_ID}",
-                        "-c", f"{MIN_SEQ_COV}",
-                        "--cov-mode", f"{COV_MODE}",
-                        "-k", f"{K_LENGTH}",
-                        "--kmer-per-seq", f"{KMER_PER_SEQ}",
-                        "--threads", f"{THREADS}",
-                        "--shuffle", f"{SHUFFLE}",
-                        # "--hash-shift", f"{HASH_SHIFT}",
-                        "--remove-tmp-files", f"{REMOVE_TMP_FILES}",
-                        "--force-reuse", f"{FORCE_REUSE_TMP}",
-                        "--alignment-mode", f"{ALIGNMENT_MODE}",
-                        "--similarity-type", f"{SIMILARITY_TYPE}",
-                        "--realign", f"{REALIGN}",
-                        "--spaced-kmer-mode", f"{SPACED_KMER_MODE}"
-                    ])
+    # iterate through input
+    n_structure_clusters = n_input_fastas(structure_clusters)
+    if n_structure_clusters == 0:
+        raise RuntimeError(f"No structure clusters found in {structure_clusters}")
+    for struct_cluster_filename, struct_cluster_file in tqdm(
+        extract_input(structure_clusters),
+        desc="Running mmseqs2 easy-linclust",
+        total=n_structure_clusters,
+        unit="cluster",
+    ):
 
-        cluster_map = parse_cluster_tsv(f"{output_path}/{filename}-sequence_clusters_cluster.tsv")
-        sequences = extract_sequences(f"{output_path}/{filename}-sequence_clusters_all_seqs.fasta")
-        write_cluster_files(cluster_map, sequences, tmp_cluster_dir, filename)
-    
+        # create temporary directory
+        with tempfile.TemporaryDirectory() as tmpdir:
+            os.chdir(tmpdir)
 
-    filename = snakemake.input[0].rsplit("/")[-1]
-    filename = filename.rsplit("-")[0]
-    final_output = os.path.join(final_output, f"{filename}-sequence_clusters.tar.gz")
-    compress_cluster_files(final_output, tmp_cluster_dir)
+            # write the fasta file
+            with open(struct_cluster_filename, "wb") as f:
+                f.write(struct_cluster_file.read())
 
-    subprocess.run(f"rm -rf {tmp_dir} {tmp_cluster_dir} {extract_path}", shell=True, executable="/bin/bash")
-    if REMOVE_OUTPUT_FILES:
-        subprocess.run(f"rm -rf {output_path}", shell=True, executable="/bin/bash")
+            # get the records from that file
+            records = {
+                accession: record
+                for accession, record in UniprotFastaParser(struct_cluster_filename)
+            }
 
+            # run mmseqs
+            run_mmseqs(struct_cluster_filename, mmseqs_output, mmseqs_tmp)
 
+            # save clusters
+            result = pd.read_csv(
+                os.path.join(tmpdir, f"{mmseqs_output}_cluster.tsv"),
+                names=["rep", "mem"],
+                sep="\t",
+            )
+            for cluster_name, cluster_df in result.groupby("rep"):
+                clusters[cluster_name] = [
+                    records[accession] for accession in cluster_df["mem"]
+                ]
 
+    os.chdir(original_wd)
 
+    # print cluster sizes
+    print_cluster_sizes(
+        clusters, min_cluster_size=MIN_CLUSTER_SIZE, max_cluster_size=MAX_CLUSTER_SIZE
+    )
 
+    # filter by size
+    clusters = filter_by_size(
+        clusters, min_cluster_size=MIN_CLUSTER_SIZE, max_cluster_size=MAX_CLUSTER_SIZE
+    )
+
+    # create output
+    save_fasta_clusters(clusters, output_archive)

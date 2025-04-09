@@ -6,11 +6,9 @@ dependencies:
   - python=3.12
   - snakemake
   - pandas
-  - requests
   - biopython
-  - curl
   - wget
-  - pip
-  - pip:
-      - pytest-xdist
-      - unittest-scenarios
+  - gzip
+  - tqdm
+  - pytest
+  - grep

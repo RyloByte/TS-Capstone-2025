@@ -1,4 +1,4 @@
-name: Run Tests
+name: Run Regression Tests
 
 on:
   pull_request:
@@ -11,31 +11,30 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: set up miniconda
+      - name: Setup miniconda
         uses: conda-incubator/setup-miniconda@v3
         with:
+          miniconda-version: "latest"
           activate-environment: snakemake_env
           environment-file: environment.yaml
           auto-activate-base: false
 
-      - name: cache utils
-        id: cache-utils
+      - name: Cache SwissProt Sequences
         uses: actions/cache@v4
         with:
-          path: |
-            utils
-          key: fixed-key-2
+          path: utils/uniprot_sprot.fasta.gz
+          key: utils_sprot--0
 
-      - name: run pytest
+      - name: Cache FoldSeek db
+        uses: actions/cache@v4
+        with:
+          path: utils/foldseek_clusters.tsv.gz
+          key: utils_foldseek--0
+
+      - name: Run pytest
         shell: bash -l {0}
         run: |
-          if [[ "${{ steps.cache-utils.outputs.cache-hit }}" == 'true' ]]; then
-            echo "utils/ cache hit, running tests in parallel"
-            pytest -n auto
-          else
-            echo "utils/ cache miss, downloading utils and running tests sequentially"
-            pytest
-          fi
+          mkdir -p utils
+          pytest -v

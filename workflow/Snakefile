@@ -1,84 +1,71 @@
-configfile: "config/config.yaml"
+configfile: "config.yaml"
 
-# utils + database downloads
+# resource downloads
 
 rule download_foldseek_database:
-    conda:
-        "envs/foldseek.yaml"
     output:
-        protected("utils/foldseek_clusters/foldseek_clusters.tsv.gz")
+        "utils/foldseek_clusters.tsv.gz"
     shell:
         """
-        mkdir -p utils/foldseek_clusters; \
-        wget -O {output} https://afdb-cluster.steineggerlab.workers.dev/5-allmembers-repId-entryId-cluFlag-taxId.tsv.gz;\
+        echo "Downloading FoldSeek clusters..."
+        mkdir -p utils
+        wget -O {output} https://afdb-cluster.steineggerlab.workers.dev/5-allmembers-repId-entryId-cluFlag-taxId.tsv.gz
         """
 
-rule download_swissprot_sequences:
-    output:
-        protected("utils/swissprot_sequences.fasta.gz")
-    shell:
-        """
-        echo "Downloading SwissProt sequences. This will take a few minutes..."; \
-        mkdir -p utils; \
-        wget -O {output} https://ftp.uniprot.org/pub/databases/uniprot/knowledgebase/complete/uniprot_sprot.fasta.gz; 
-        """
-
-rule download_swissprot_data:
-    output:
-        protected("utils/swissprot_data.tsv.gz")
-    shell:
-        """
-        echo "Downloading SwissProt data. This will take a few minutes..."; \
-        mkdir -p utils; \
-        curl -o {output} "https://rest.uniprot.org/uniprotkb/stream?compressed=true&fields=accession%2Crhea%2Cid%2Cprotein_name%2Cxref_alphafolddb%2Cxref_pdb%2Corganism_id%2Cec%2Clineage_ids&format=tsv&query=(reviewed:true)";
-        """
-
-rule create_swissprot_taxonomies:
+rule build_cluster_db:
     input:
-        "utils/swissprot_data.tsv.gz"
+        "utils/foldseek_clusters.tsv.gz",
+        "utils/uniprot_sprot.fasta.gz"
     output:
-        protected("utils/swissprot_taxonomies.tsv.gz")
+        "utils/cluster_db.sqlite3"
     script:
-        "scripts/create_taxonomies.py"
-    
+        "scripts/build_cluster_db.py"
 
-# user inputs
-
-rule rename_fasta:
-    input:
-        "{file_}.fasta"
+rule download_swissprot_fasta:
     output:
-        temp("{file_}.faa")
+        "utils/uniprot_sprot.fasta.gz"
     shell:
-        "cp {input} {output}"
+        """
+        echo "Downloading SwissProt Sequences..."
+        mkdir -p utils
+        wget -O {output} ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta.gz
+        """
 
-rule rhea_homologous_proteins:
-    input:
-        "utils/swissprot_data.tsv.gz",
-        "utils/swissprot_sequences.fasta.gz"
+rule download_swissprot_entries_by_activity:
     output:
-        temp("data/rhea_{number}-uniprot_mapped.faa")
-    script:
-        "scripts/homologous_proteins.py"
+        "data/{activity_type}_{activity_number}.fasta"
+    wildcard_constraints:
+        activity_type="ec|rhea"
+    shell:
+        """
+        echo "Querying SwissProt for {wildcards.activity_type} {wildcards.activity_number}..."
+        mkdir -p utils
+        wget -O {output}.gz "https://rest.uniprot.org/uniprotkb/stream?compressed=true&format=fasta&query=%28%28{wildcards.activity_type}%3A{wildcards.activity_number}%29%29+AND+%28reviewed%3Atrue%29"
+        gunzip {output}.gz
+        
+        seq_count=$(grep -c '^>' {output} || echo 0)
+        echo "Downloaded $seq_count sequences to {output}"
+        """
 
-rule ec_homologous_proteins:
+rule unzip_fasta:
     input:
-        "utils/swissprot_data.tsv.gz",
-        "utils/swissprot_sequences.fasta.gz"
+        "{sample}.fasta.gz"
     output:
-        temp("data/ec_{number}-uniprot_mapped.faa")
-    script:
-        "scripts/homologous_proteins.py"
+        "{sample}.fasta"
+    shell:
+        """
+        gunzip {input}
+        """
 
-# clustering and treesapp prep
+# clustering
 
 rule structure_clustering:
     input:
-        "data/{sample}-uniprot_mapped.faa",
-        "utils/foldseek_clusters/foldseek_clusters.tsv.gz",
-        "utils/swissprot_sequences.fasta.gz"
+        "data/{sample}.fasta",
+        "utils/cluster_db.sqlite3",
+        "utils/uniprot_sprot.fasta.gz"
     output:
-        temp("data/{sample}-structure_clusters.tar.gz")
+        "data/structure_clusters/{sample}.fasta.tar.gz"
     script:
         "scripts/structure_clustering.py"
 
@@ -86,22 +73,20 @@ rule sequence_clustering:
     conda: 
         "envs/mmseqs2.yaml"
     input:
-        "data/{sample}-structure_clusters.tar.gz"
+        "data/structure_clusters/{sample}.fasta.tar.gz"
     output:
-        temp("data/{sample}-sequence_clusters.tar.gz")
+        "data/sequence_clusters/{sample}.fasta.tar.gz"
     script:
         "scripts/sequence_clustering.py"
 
-# create functional reference package
+# TreeSAPP create
 
 rule treesapp_create:
     conda:
         "envs/treesapp.yaml"
     input:
-        "utils/swissprot_data.tsv.gz",
-        "utils/swissprot_taxonomies.tsv",
-        "data/{sample}-sequence_clusters.tar.gz"
+        "data/sequence_clusters/{sample}.fasta.tar.gz"
     output:
-        "result/{sample}-hyperpackage.tar.gz"
+        "data/hyperpackages/{sample}.refpkg.tar.gz"
     script:
         "scripts/treesapp_create.py"
