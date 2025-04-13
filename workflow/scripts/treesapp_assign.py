@@ -5,7 +5,7 @@ import tempfile
 from tqdm import tqdm
 
 def run_treesapp_assign(input_fasta: str, output_dir: str, refpkg_path: str) -> None:
-    os.makedirs(output_path, exist_ok=True)
+    os.makedirs(output_dir, exist_ok=True)
     result = subprocess.run(
         [
             "treesapp", "assign", 
@@ -37,28 +37,25 @@ if __name__ == "__main__":
     assigned_tar_output = snakemake.output[0]
 
     # Extract tar.gz into temp dir
-    # with tempfile.TemporaryDirectory() as tmp:
-    # tmp = tempfile.mkdtemp(prefix="treesapp_debug_")
-    tmp = os.path.abspath("treesapp_debug")
-    print(f"[DEBUG] Temporary working directory: {tmp}")
-    with tarfile.open(hyperpackage, "r:gz") as tar:
-        members = tar.getmembers()
-        if len(members) == 0:
-            raise RuntimeError(f"No reference packages found in {hyperpackage}")
+    with tempfile.TemporaryDirectory() as tmp:
+        with tarfile.open(hyperpackage, "r:gz") as tar:
+            members = tar.getmembers()
+            if len(members) == 0:
+                raise RuntimeError(f"No reference packages found in {hyperpackage}")
+            
+            tar.extractall(path=tmp)
         
-        tar.extractall(path=tmp)
-    
-    assigned_dir = os.path.join(tmp, "assigned_packages")
-    os.makedirs(assigned_dir, exist_ok=True)
+        assigned_dir = os.path.join(tmp, "assigned_packages")
+        # # os.makedirs(assigned_dir, exist_ok=True)
 
-    refpkg_dirs = {member.name.split("/")[0] for member in members if "/" in member.name}
+        refpkg_dirs = {member.name.split("/")[0] for member in members if "/" in member.name}
 
-    for i, refpkg in enumerate(tqdm(sorted(refpkg_dirs), desc="Assigning")):
-        if i >= 10:
-            break
-        refpkg_path = os.path.join(tmp, refpkg)
-        output_path = os.path.join(assigned_dir, refpkg, "final_outputs.")
-        if os.path.isdir(refpkg_path):
-            run_treesapp_assign(fasta, refpkg_path, output_path)
+        for i, refpkg in enumerate(tqdm(sorted(refpkg_dirs), desc="Assigning")):
+            # if i >= 3:
+            #     break
+            output_pkg_dir = os.path.join(assigned_dir, refpkg)
+            input_pkg_dir = os.path.join(tmp, refpkg, "final_outputs")
+            if os.path.isdir(input_pkg_dir):
+                run_treesapp_assign(fasta, output_pkg_dir, input_pkg_dir)
 
-    create_tar_gz(assigned_tar_output, assigned_dir)
+        create_tar_gz(assigned_tar_output, assigned_dir)
