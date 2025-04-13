@@ -90,3 +90,14 @@ rule treesapp_create:
         "data/hyperpackages/{sample}.refpkg.tar.gz"
     script:
         "scripts/treesapp_create.py"
+
+rule treesapp_assign:
+    conda:
+        "envs/treesapp.yaml"
+    input:
+        "data/hyperpackages/{sample}.refpkg.tar.gz",
+        "data/assign_fastas/fasta_name.fasta"
+    output:
+        "data/assigned_hyperpackages/fasta_name/{sample}.refpkg.tar.gz"
+    script:
+        "scripts/treesapp_assign.py"
