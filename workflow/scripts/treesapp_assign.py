@@ -4,6 +4,9 @@ import os
 import tempfile
 from tqdm import tqdm
 
+config = snakemake.config["treesapp_assign"]
+NUM_THREADS = config["num_threads"]
+
 def run_treesapp_assign(input_fasta: str, output_dir: str, refpkg_path: str) -> None:
     os.makedirs(output_dir, exist_ok=True)
     result = subprocess.run(
@@ -13,7 +16,8 @@ def run_treesapp_assign(input_fasta: str, output_dir: str, refpkg_path: str) -> 
              "-m", "prot", 
              "--trim_align", 
              "-o", output_dir,
-             "--refpkg_dir", refpkg_path
+             "--refpkg_dir", refpkg_path,
+             "-n", NUM_THREADS
         ],
         capture_output=True,
         text=True
@@ -45,17 +49,16 @@ if __name__ == "__main__":
             
             tar.extractall(path=tmp)
         
+        # Create dir in temp dir which holds packages that have completed treesapp assign
         assigned_dir = os.path.join(tmp, "assigned_packages")
-        # # os.makedirs(assigned_dir, exist_ok=True)
-
         refpkg_dirs = {member.name.split("/")[0] for member in members if "/" in member.name}
 
-        for i, refpkg in enumerate(tqdm(sorted(refpkg_dirs), desc="Assigning")):
-            # if i >= 3:
-            #     break
+        # Perform treesapp assign on each refpkg
+        for refpkg in tqdm(sorted(refpkg_dirs), desc="Assigning", unit="refpkg"):
             output_pkg_dir = os.path.join(assigned_dir, refpkg)
             input_pkg_dir = os.path.join(tmp, refpkg, "final_outputs")
             if os.path.isdir(input_pkg_dir):
                 run_treesapp_assign(fasta, output_pkg_dir, input_pkg_dir)
 
+        # Create output
         create_tar_gz(assigned_tar_output, assigned_dir)
