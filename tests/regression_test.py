@@ -46,7 +46,7 @@ class RegressionTest(TestCase):
     
     def test_assign_hyperpackage(self):
         requested_files = [
-            "data/assigned_packages/geneX/rhea_10596.refpkg.tar.gz",
+            "data/assigned_hyperpackages/geneX/rhea_10596.refpkg.tar.gz",
         ]
 
         original_wd = os.getcwd()
