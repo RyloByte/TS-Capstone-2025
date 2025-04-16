@@ -17,7 +17,7 @@ def run_treesapp_assign(input_fasta: str, output_dir: str, refpkg_path: str) -> 
              "--trim_align", 
              "-o", output_dir,
              "--refpkg_dir", refpkg_path,
-             "-n", NUM_THREADS
+             "-n", str(NUM_THREADS)
         ],
         capture_output=True,
         text=True

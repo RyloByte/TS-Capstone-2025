@@ -2,7 +2,7 @@ import os
 import sqlite3
 
 import pandas as pd
-from snakemake.script import snakemake
+from snakemake.script import Snakemake
 from tqdm.auto import tqdm
 from uniprot_utils import UniprotFastaParser
 

@@ -19,6 +19,7 @@ sequence_clustering:
   # argument to pass to mmseqs - can greatly impact hyperpackage composition
   mmseqs_args: [
     "--min-seq-id 0.9",
+    "-c 0.8",
     "--cov-mode 5",
     "-k 15",
     "--shuffle 0",
