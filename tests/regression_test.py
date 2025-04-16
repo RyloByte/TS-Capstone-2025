@@ -56,7 +56,7 @@ class RegressionTest(TestCase):
             os.symlink(project_dir / "workflow", "workflow")
             os.symlink(project_dir / "utils", "utils")
             os.symlink(tests_dir / "test_config.yaml", "config.yaml")
-            os.symlink(tests_dir / "geneX.fasta", "geneX.fasta")
+            os.symlink(tests_dir / "geneX.fasta", "data/assign_fastas/geneX.fasta")
 
             result = subprocess.run(
                 ["snakemake", "--use-conda", "--jobs", str(self.n_snakemake_cores)]
