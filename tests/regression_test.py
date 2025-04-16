@@ -65,13 +65,18 @@ class RegressionTest(TestCase):
 
             result = subprocess.run(
                 ["snakemake", "--use-conda", "--jobs", str(self.n_snakemake_cores)]
-                + requested_files
+                + requested_files,
+                stdout=subprocess.PIPE,
+                strderr=subprocess.PIPE,
+                text=True
             )
 
             self.assertEqual(
-            
+                0,
                 result.returncode,
-                f"Snakemake returned non-zero code: {result.returncode}",
+                f"Snakemake returned non-zero code: {result.returncode}\n",
+                f"STDOUT:\n{result.stdout}\n"
+                f"STDERR:\n{result.stderr}"
             )
 
             for file in requested_files:
