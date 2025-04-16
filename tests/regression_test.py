@@ -30,7 +30,7 @@ class RegressionTest(TestCase):
                 ["snakemake", "--use-conda", "--jobs", str(self.n_snakemake_cores)]
                 + requested_files,
                 stdout=subprocess.PIPE,
-                strderr=subprocess.PIPE,
+                stderr=subprocess.PIPE,
                 text=True
             )
 
@@ -67,7 +67,7 @@ class RegressionTest(TestCase):
                 ["snakemake", "--use-conda", "--jobs", str(self.n_snakemake_cores)]
                 + requested_files,
                 stdout=subprocess.PIPE,
-                strderr=subprocess.PIPE,
+                stderr=subprocess.PIPE,
                 text=True
             )
 
