@@ -10,7 +10,7 @@ from cluster_utils import (
     print_cluster_sizes,
     save_fasta_clusters,
 )
-from snakemake.script import snakemake
+from snakemake.script import Snakemake
 from tqdm.auto import tqdm
 from uniprot_utils import UniprotFastaParser
 

@@ -8,7 +8,7 @@ import tempfile
 from pathlib import Path
 
 from cluster_utils import extract_input, n_input_fastas
-from snakemake.script import snakemake
+from snakemake.script import Snakemake
 from tqdm.auto import tqdm
 from uniprot_utils import UniprotFastaParser
 

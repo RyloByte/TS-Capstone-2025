@@ -4,4 +4,4 @@ channels:
   - conda-forge
 dependencies:
   - python=3.12
-  - mmseqs2
+  - mmseqs2=14.*
