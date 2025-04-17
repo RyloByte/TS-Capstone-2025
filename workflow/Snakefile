@@ -87,6 +87,6 @@ rule treesapp_create:
     input:
         "data/sequence_clusters/{sample}.fasta.tar.gz"
     output:
-        "data/hyperpackages/{sample}.refpkg.tar.gz"
+        "results/hyperpackages/{sample}.refpkg.tar.gz"
     script:
         "scripts/treesapp_create.py"

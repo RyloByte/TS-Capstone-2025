@@ -49,17 +49,19 @@ This workflow requires [Conda](https://www.anaconda.com/docs/getting-started/min
 
 **NOTE:** Due to the [conda TreeSAPP dependency](https://anaconda.org/bioconda/treesapp), this workflow currently cannot run natively on ARM (M1/2/etc.) based Macs.
 
+**NOTE 2:** It is likely easier to use this tool with Docker once you have cloned the repository. See the Docker section below for how to build and run that image. 
+
 # Usage
 
 ## Create Hyperpackage by Activity Number Lookup
 
 Since this project is snakemake based, run snakemake with the files you would like to create. This workflow will create
-hyperpackages in the format `data/hyperpackages/<ec|rhea>_<activity number>.refpkg.tar.gz`. If you want to create a
+hyperpackages in the format `results/hyperpackages/<ec|rhea>_<activity number>.refpkg.tar.gz`. If you want to create a
 hyperpackage for EC activity number 2.7.10.1, run the following command:
 
 ```shell
 conda activate snakemake_env
-snakemake --use-conda data/hyperpackages/ec_2.7.10.1.refpgk.tar.gz
+snakemake --use-conda results/hyperpackages/ec_2.7.10.1.refpgk.tar.gz
 ```
 
 You can similarly create a Rhea ID hyperpackage like:
@@ -79,7 +81,7 @@ the `.fasta` or `.fasta.gz` in `data/` and then request the resulting files. Ex.
 `data/my_seqs.fasta`, and make a hyperpackage by:
 
 ```shell
-snakemake --use-conda data/hyperpackages/my_seqs.refpkg.tar.gz
+snakemake --use-conda results/hyperpackages/my_seqs.refpkg.tar.gz
 ```
 
 ## Logistics
@@ -102,10 +104,17 @@ utils/                     <-- utility files for building clusters etc.
 data/                      <-- SwissProt .fasta files of functionally homologous proteins
 data/structure_clusters/   <-- .tar.gz archives of .fasta files broken up by structure cluster
 data/sequence_clusters/    <-- .tar.gz archives of .fasta files broken up by sequence cluster
-data/hyperpackages/        <-- .tar.gz archives of reference packages made from clusters
+results/hyperpackages/     <-- .tar.gz archives of reference packages made from clusters
 ```
 
 # Configuration
 
 Inside the `config.yaml` file you will find options that can alter the behavior and results of the workflow with descriptions.
 Among these are extra arguments to pass to `mmseqs2 easy-linclust` and `treesapp create`.
+
+# Using Docker
+
+Make build and run scripts executable with `chmod +x build.sh run.sh`. Build the image with `./build.sh`. Run the image with `./run.sh` and whatever files you want to request from the workflow. For example `./run.sh results/hyperpackages/ec_2.7.10.1.refpkg.tar.gz`.
+Using the `run.sh` script is equivalent to `snakemake --use-conda -j $(nproc) ...`. 
+
+The given scripts force the image to be built & run for Linux x64, which is the only supported Docker platform. ARM Mac users (M1/2/etc.) should take care to use Rosetta as an emulator which is significantly faster than the built-in Docker emulation. The inability to run this tool on other platforms and the difficulty of reproducing builds (even with conda) is a reason for having a docker image.

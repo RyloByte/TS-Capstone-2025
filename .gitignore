@@ -1,6 +1,7 @@
 .snakemake
 data/
 utils/
+results/
 config.yaml
 
 ### VisualStudioCode template
