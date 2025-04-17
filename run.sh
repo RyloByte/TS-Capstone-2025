@@ -8,6 +8,12 @@ if [ ! -f "config.yaml" ]; then
   cp "config.yaml.example" "config.yaml"
 fi
 
+if command -v nproc &> /dev/null; then
+  NUM_PROCS=$(nproc)
+else
+  NUM_PROCS=$(sysctl -n hw.ncpu)
+fi
+
 docker run \
   --platform linux/amd64 \
   -v "$(pwd)/data:/workflow-dir/data" \
@@ -15,4 +21,4 @@ docker run \
   -v "$(pwd)/results:/workflow-dir/results" \
   -v "$(pwd)/config.yaml:/workflow-dir/config.yaml" \
   -it $IMAGE_NAME \
-  -j $(nproc) "$@"
+  -j $NUM_PROCS "$@"
