@@ -2,8 +2,10 @@
 
 IMAGE_NAME="treesapp-hyperpackage-workflow"
 
+# allow compiling for x64 from arm
 docker run --privileged --rm tonistiigi/binfmt --install all
 
+# check for build x
 docker buildx create --name multiarch --use 2>/dev/null || true
 
 docker buildx build \

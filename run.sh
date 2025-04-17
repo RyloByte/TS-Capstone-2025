@@ -2,19 +2,23 @@
 
 IMAGE_NAME="treesapp-hyperpackage-workflow"
 
+# check for/create user config file
 mkdir -p data utils results
 if [ ! -f "config.yaml" ]; then
   echo "Creating config.yaml from example file"
   cp "config.yaml.example" "config.yaml"
 fi
 
+# get number of processors
 if command -v nproc &> /dev/null; then
   NUM_PROCS=$(nproc)
 else
   NUM_PROCS=$(sysctl -n hw.ncpu)
 fi
 
+# run deleting container with mounts
 docker run \
+  --rm \
   --platform linux/amd64 \
   -v "$(pwd)/data:/workflow-dir/data" \
   -v "$(pwd)/utils:/workflow-dir/utils" \
