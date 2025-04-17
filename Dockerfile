@@ -14,5 +14,6 @@ RUN cp config.yaml.example config.yaml && \
     rm config.yaml.example config.yaml
 
 RUN mv entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["-h"]
