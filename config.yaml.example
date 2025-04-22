@@ -34,7 +34,7 @@ treesapp_create:
   extra_args: []
 
 treesapp_assign:
-  # number of threads
-  num_threads: "2"
   # additional argument to pass to treesapp
-  extra_args: []
+  extra_args: [
+    "-n 2"
+  ]

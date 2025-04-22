@@ -3,6 +3,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 from unittest import TestCase
+import sys
 
 tests_dir = Path(__file__).parent
 project_dir = tests_dir.parent
@@ -29,17 +30,15 @@ class RegressionTest(TestCase):
             result = subprocess.run(
                 ["snakemake", "--use-conda", "--jobs", str(self.n_snakemake_cores)]
                 + requested_files,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                stdout=sys.stdout,
+                stderr=sys.stderr,
                 text=True
             )
 
             self.assertEqual(
                 0,
                 result.returncode,
-                f"Snakemake returned non-zero code: {result.returncode}\n",
-                f"STDOUT:\n{result.stdout}\n"
-                f"STDERR:\n{result.stderr}"
+                f"Snakemake returned non-zero code: {result.returncode}\n"
             )
 
             for file in requested_files:
@@ -66,8 +65,8 @@ class RegressionTest(TestCase):
             result = subprocess.run(
                 ["snakemake", "--use-conda", "--jobs", str(self.n_snakemake_cores)]
                 + requested_files,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                stdout=sys.stdout,
+                stderr=sys.stderr,
                 text=True
             )
 

@@ -11,7 +11,7 @@ structure_clustering:
 
 sequence_clustering:
   # mute the output of the mmseqs2 tool
-  mute_mmseqs: true
+  mute_mmseqs: false
   # minimum cluster size to accept, inclusive, optional
   min_cluster_size: 5
   # maximum cluster size to accept, inclusive, optional
@@ -29,12 +29,12 @@ sequence_clustering:
 
 treesapp_create:
   # mute the output of the treesapp tool
-  mute_treesapp: true
+  mute_treesapp: false
   # additional arguments to pass to treesapp
   extra_args: []
 
 treesapp_assign:
-  # number of threads
-  num_threads: "2"
   # additional argument to pass to treesapp
-  extra_args: []
+  extra_args: [
+    "-n 2"
+  ]
