@@ -74,9 +74,7 @@ class RegressionTest(TestCase):
             self.assertEqual(
                 0,
                 result.returncode,
-                f"Snakemake returned non-zero code: {result.returncode}\n",
-                f"STDOUT:\n{result.stdout}\n"
-                f"STDERR:\n{result.stderr}"
+                f"Snakemake returned non-zero code: {result.returncode}\n"
             )
 
             for file in requested_files:

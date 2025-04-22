@@ -6,6 +6,9 @@ from tqdm import tqdm
 
 config = snakemake.config["treesapp_assign"]
 NUM_THREADS = config["num_threads"]
+EXTRA_ARGS = []
+for item in snakemake.config["extra_args"]:
+    EXTRA_ARGS += item.split()
 
 def run_treesapp_assign(input_fasta: str, output_dir: str, refpkg_path: str) -> None:
     os.makedirs(output_dir, exist_ok=True)
@@ -18,7 +21,8 @@ def run_treesapp_assign(input_fasta: str, output_dir: str, refpkg_path: str) -> 
              "-o", output_dir,
              "--refpkg_dir", refpkg_path,
              "-n", NUM_THREADS
-        ],
+        ]
+        + EXTRA_ARGS,
         capture_output=True,
         text=True
     )
