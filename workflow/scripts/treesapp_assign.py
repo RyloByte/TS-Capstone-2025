@@ -56,6 +56,7 @@ if __name__ == "__main__":
         
         # Create dir in temp dir which holds packages that have completed treesapp assign
         assigned_dir = os.path.join(tmp, "assigned_packages")
+        os.mkdir(assigned_dir)
         shutil.copy(os.path.join(tmp, "manifest.json"), os.path.join(assigned_dir, "manifest.json"))
 
         # Perform treesapp assign on each refpkg

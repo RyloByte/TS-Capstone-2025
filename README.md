@@ -11,7 +11,7 @@ reference packages are made for each cluster, which are then combined into a "hy
 
 ## Google Colab Demo
 
-# == PLEASE PUT GOOGLE COLAB DEMO INTO HERE ==
+# == PLEASE PUT GOOGLE COLAB DEMO LINK + DESCRIPTION HERE ==
 
 ## Hyperpackage Create Overview
 
@@ -78,8 +78,7 @@ snakemake --use-conda ...
 
 Download the `run.sh` script from the repository and use the tool as `./run.sh ...`.
 
-You may need to make the script executable with `chmod +x run.sh`. There is a variable in the run script to choose the
-image version (default is latest).
+The run script will check for `config.yaml` and if it is not present use default values.
 
 ## Configuration
 
@@ -133,11 +132,10 @@ only take a few minutes for average to smaller groups of sequences.
 This program creates files in:
 
 ```
-utils/                     <-- utility files for building clusters etc.
-data/                      <-- SwissProt .fasta files of functionally homologous proteins
-data/structure_clusters/   <-- .tar.gz archives of .fasta files broken up by structure cluster
-data/sequence_clusters/    <-- .tar.gz archives of .fasta files broken up by sequence cluster
-results/hyperpackages/     <-- .tar.gz archives of reference packages made from clusters
+utils/                            <-- utility files for building clusters etc.
+data/                             <-- SwissProt .fasta files
+data/structure_clusters/          <-- .tar.gz archives of .fasta files broken up by structure cluster
+data/sequence_clusters/           <-- .tar.gz archives of .fasta files broken up by sequence cluster
+results/hyperpackages/            <-- .tar.gz archives of reference packages made from clusters
+results/assigned_hyperpackages/   <-- .tar.gz archives of reference packages annotated with assignment operation
 ```
-
-# == PLEASE ADD ASSIGN RELATED FILES TO THIS LIST ==
