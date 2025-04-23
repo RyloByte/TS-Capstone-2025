@@ -31,10 +31,16 @@ treesapp_create:
   # mute the output of the treesapp tool
   mute_treesapp: true
   # additional arguments to pass to treesapp
-  extra_args: []
+  extra_args: [
+    "--headless"
+  ]
 
 treesapp_assign:
+  # mute the output of the treesapp tool
+  mute_treesapp: true
   # additional argument to pass to treesapp
   extra_args: [
+    "-m prot",
+    "--trim_align",
     "-n 2"
   ]

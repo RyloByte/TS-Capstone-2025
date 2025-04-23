@@ -5,6 +5,7 @@ import tempfile
 from tqdm import tqdm
 
 config = snakemake.config["treesapp_assign"]
+MUTE_TREESAPP = config["mute_treesapp"]
 EXTRA_ARGS = []
 for item in config["extra_args"]:
     EXTRA_ARGS += item.split()
@@ -14,20 +15,20 @@ def run_treesapp_assign(input_fasta: str, output_dir: str, refpkg_path: str) -> 
     result = subprocess.run(
         [
             "treesapp", "assign", 
-             "-i", input_fasta, 
-             "-m", "prot", 
-             "--trim_align", 
+             "-i", input_fasta,
              "-o", output_dir,
              "--refpkg_dir", refpkg_path,
         ]
         + EXTRA_ARGS,
-        capture_output=True,
+        capture_output=MUTE_TREESAPP,
         text=True
     )
 
     if result.returncode != 0:
-        print(f"[ERROR] Failed on {refpkg_path}")
-        print(result.stderr)
+        if MUTE_TREESAPP:
+            print(result.stderr)
+        raise RuntimeError(f"Got non-zero return code from TreeSAPP: {result.returncode}")
+
 
 def create_tar_gz(output_path: str, input_dir: str):
     with tarfile.open(output_path, "w:gz") as tar:
