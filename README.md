@@ -9,6 +9,10 @@ The motivation for this is to create and use phylogenetic trees that are based o
 rather than a manually curated collection with high sequence identity etc. The given sequences are clustered and
 reference packages are made for each cluster, which are then combined into a "hyperpackage".
 
+## Google Colab Demo
+
+# == PLEASE PUT GOOGLE COLAB DEMO INTO HERE ==
+
 ## Hyperpackage Create Overview
 
 ```mermaid
