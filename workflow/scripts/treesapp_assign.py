@@ -25,6 +25,7 @@ def run_treesapp_assign(input_fasta: str, output_dir: str, refpkg_path: str) -> 
         text=True
     )
 
+    # check result
     if result.returncode != 0:
         if MUTE_TREESAPP:
             print(result.stderr)
@@ -47,8 +48,8 @@ if __name__ == "__main__":
     # Extract tar.gz into temp dir
     with tempfile.TemporaryDirectory() as tmp:
         with tarfile.open(hyperpackage, "r:gz") as tar:
-            members = tar.getmembers()
-            if len(members) == 0:
+            refpkg_dirs = [member.name for member in tar.getmembers() if member.isdir()]
+            if len(refpkg_dirs) == 0:
                 raise RuntimeError(f"No reference packages found in {hyperpackage}")
             
             tar.extractall(path=tmp)
@@ -56,7 +57,6 @@ if __name__ == "__main__":
         # Create dir in temp dir which holds packages that have completed treesapp assign
         assigned_dir = os.path.join(tmp, "assigned_packages")
         shutil.copy(os.path.join(tmp, "manifest.json"), os.path.join(assigned_dir, "manifest.json"))
-        refpkg_dirs = {member.name.split("/")[0] for member in members if "/" in member.name}
 
         # Perform treesapp assign on each refpkg
         for refpkg in tqdm(sorted(refpkg_dirs), desc="Assigning", unit="refpkg"):
