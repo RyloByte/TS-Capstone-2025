@@ -91,14 +91,15 @@ rule treesapp_create:
     script:
         "scripts/treesapp_create.py"
 
+# TreeSAPP assign
 
 rule treesapp_assign:
     conda:
         "envs/treesapp.yaml"
     input:
-        "data/hyperpackages/{sample}.refpkg.tar.gz",
-        "data/assign_fastas/{fasta}.fasta"
+        "results/hyperpackages/{sample}.refpkg.tar.gz",
+        "data/{fasta}.fasta"
     output:
-        "data/assigned_hyperpackages/{fasta}/{sample}.refpkg.tar.gz"
+        "results/assigned_hyperpackages/{fasta}/{sample}.refpkg.tar.gz"
     script:
         "scripts/treesapp_assign.py"
