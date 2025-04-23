@@ -1,3 +1,4 @@
+import shutil
 import tarfile
 import subprocess
 import os
@@ -54,6 +55,7 @@ if __name__ == "__main__":
         
         # Create dir in temp dir which holds packages that have completed treesapp assign
         assigned_dir = os.path.join(tmp, "assigned_packages")
+        shutil.copy(os.path.join(tmp, "manifest.json"), os.path.join(assigned_dir, "manifest.json"))
         refpkg_dirs = {member.name.split("/")[0] for member in members if "/" in member.name}
 
         # Perform treesapp assign on each refpkg
