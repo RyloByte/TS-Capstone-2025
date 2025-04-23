@@ -32,3 +32,9 @@ treesapp_create:
   mute_treesapp: true
   # additional arguments to pass to treesapp
   extra_args: []
+
+treesapp_assign:
+  # additional argument to pass to treesapp
+  extra_args: [
+    "-n 2"
+  ]
