@@ -14,9 +14,6 @@ fi
 # run deleting container with mounts
 docker run \
   --rm \
-  -v "$(pwd)/data:/workflow-dir/data" \
-  -v "$(pwd)/utils:/workflow-dir/utils" \
-  -v "$(pwd)/results:/workflow-dir/results" \
-  -v "$(pwd)/config.yaml:/workflow-dir/config.yaml" \
+  -v "$(pwd):/workflow-dir"
   -it $IMAGE_NAME \
   -j $NUM_PROCS "$@"
