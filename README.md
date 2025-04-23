@@ -2,12 +2,14 @@
 
 This is a [snakemake](https://snakemake.github.io/) workflow project that extends the functionality of
 [TreeSAPP](https://github.com/hallamlab/TreeSAPP) to create composite [reference packages](https://github.com/hallamlab/TreeSAPP/wiki/Building-reference-packages-with-TreeSAPP#step-2-creating-the-reference-package)
-(phylogentic trees + other tools) based on functional homology via Rhea ID, EC number, or other groupings rather than from manually
-curated collections of protein sequences.
+(phylogentic trees + other tools) based on functional homology via Rhea ID, EC number. The starting sequences can be
+from any grouping, but this tool automates based off of Rhea and EC activity numbers. 
 
-The motivation for this is to create phylogenetic trees centered around some functionality **TODO ADD MORE**
+The motivation for this is to create and use phylogenetic trees that are based on a some characteristic (such as function)
+rather than a manually curated collection with high sequence identity etc. The given sequences are clustered and
+reference packages are made for each cluster, which are then combined into a "hyperpackage".
 
-## Workflow Overview
+## Hyperpackage Create Overview
 
 ```mermaid
 flowchart TD
@@ -33,44 +35,69 @@ flowchart TD
     A-->M
 ```
 
-**NOTE:** The `Functionally Homologous Fasta` can be any list of sequences. This workflow can automatically grab SwissProt
-fastas based on an activity number, but you can put any SwissProt fasta file you want there (it just needs to have the
-SwissProt accession ID format).
+**NOTE:** The `Functionally Homologous Fasta` can be any set of sequences from SwissProt. This workflow automatically
+gets SwissProt fastas based on Rhea or EC activity number, but you can use any SwissProt formatted fasta file you want.
 
-A "hyperpackage" is an archive of several regular TreeSAPP reference packages, each generated from a separate cluster of sequences. **TODO ADD MORE ABOUT THE USAGE OF HYPERPACKAGES**
+## Hyperpackage Assign Overview
 
-# Setup
-
-This workflow requires [Conda](https://www.anaconda.com/docs/getting-started/miniconda/install) and uses tools for Linux/Mac.
-
-1. Clone the repository
-2. Create the conda environment via `conda env create -f environment.yaml`
-3. Copy the config file `config.yaml.example` to `config.yaml`
-
-**NOTE:** Due to the [conda TreeSAPP dependency](https://anaconda.org/bioconda/treesapp), this workflow currently cannot run natively on ARM (M1/2/etc.) based Macs.
-
-**NOTE 2:** It is likely easier to use this tool with Docker once you have cloned the repository. See the Docker section below for how to build and run that image. 
+# == PLEASE PUT ASSIGN FLOW CHART HERE ==
 
 # Usage
 
+### Supported Platforms
+
+This tool is limited to x64 linux and MacOS. Running on ARM via. Apple Rosetta or Docker VMM has been unsuccessful.
+
+## Setup
+
+### Conda
+
+```shell
+# Clone the repository
+git clone https://github.com/RyloByte/TS-Capstone-2025.git
+cd TS-Capstone-2025
+
+# Create the conda environment
+conda env create -f environment.yaml
+
+# Copy the example config file
+cp config.yaml.example config.yaml
+
+# Activate the conda environment
+conda activate snakemake_env
+
+# Use the tool, need use-conda flag for underlying tools
+snakemake --use-conda ...
+```
+
+### Docker
+
+Download the `run.sh` script from the repository and use the tool as `./run.sh ...`.
+
+You may need to make the script executable with `chmod +x run.sh`. There is a variable in the run script to choose the
+image version (default is latest).
+
+## Configuration
+
+Inside the `config.yaml` file you will find options that can alter the behavior and results of the workflow with descriptions.
+Among these are extra arguments to pass to `mmseqs2 easy-linclust` and `treesapp create`.
+
 ## Create Hyperpackage by Activity Number Lookup
 
-Since this project is snakemake based, run snakemake with the files you would like to create. This workflow will create
-hyperpackages in the format `results/hyperpackages/<ec|rhea>_<activity number>.refpkg.tar.gz`. If you want to create a
-hyperpackage for EC activity number 2.7.10.1, run the following command:
+This tool is snakemake based. You run it by requesting the desired files. Hyperpackages go in `results/hyperpackages/<>.refpkg.tar.gz`.
+This tool will automatically look up sequences by Rhea ID (`rhea_<number>`) or EC number (`ec_<number>`).
+To request a hyperpackage from EC number 2.7.10.1 run:
 
 ```shell
-conda activate snakemake_env
-snakemake --use-conda results/hyperpackages/ec_2.7.10.1.refpgk.tar.gz
+# for conda
+snakemake --use-conda results/hyperpackages/ec_2.7.10.1.refpkg.tar.gz
+
+# for docker
+./run.sh results/hyperpackages/ec_2.7.10.1.refpkg.tar.gz
 ```
 
-You can similarly create a Rhea ID hyperpackage like:
-
-```shell
-snakemake --use-conda data/hyperpackage/rhea_10596.refpkg.tar.gz
-```
-
-General EC numbers like `2.7.10` or `2.7` etc. are also supported.
+The tool will automatically run necessary intermediate steps like initializing the cluster database, downloading the
+needed fasta files, etc.
 
 ## Create by Other Sequences
 
@@ -84,9 +111,11 @@ the `.fasta` or `.fasta.gz` in `data/` and then request the resulting files. Ex.
 snakemake --use-conda results/hyperpackages/my_seqs.refpkg.tar.gz
 ```
 
-## Logistics
+## Hyperpackage Assign
 
-The `--use-conda` flag is required for the underlying tools to work.
+# == PLEASE PUT INFO FOR USING HYPERPACKAGE ASSIGN HERE ==
+
+# File Layout
 
 You can also request any intermediate file such as:
 
@@ -107,14 +136,4 @@ data/sequence_clusters/    <-- .tar.gz archives of .fasta files broken up by seq
 results/hyperpackages/     <-- .tar.gz archives of reference packages made from clusters
 ```
 
-# Configuration
-
-Inside the `config.yaml` file you will find options that can alter the behavior and results of the workflow with descriptions.
-Among these are extra arguments to pass to `mmseqs2 easy-linclust` and `treesapp create`.
-
-# Using Docker
-
-Make build and run scripts executable with `chmod +x build.sh run.sh`. Build the image with `./build.sh`. Run the image with `./run.sh` and whatever files you want to request from the workflow. For example `./run.sh results/hyperpackages/ec_2.7.10.1.refpkg.tar.gz`.
-Using the `run.sh` script is equivalent to `snakemake --use-conda -j $(nproc) ...`. 
-
-The given scripts force the image to be built & run for Linux x64, which is the only supported Docker platform. ARM Mac users (M1/2/etc.) will probably need to switch their Docker virtualization backend from apple virtualization to VCC for the tools to work. The inability to run this tool on other platforms and the difficulty of reproducing builds (even with conda) is a reason for having a docker image.
+# == PLEASE ADD ASSIGN RELATED FILES TO THIS LIST ==

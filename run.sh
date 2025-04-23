@@ -1,6 +1,6 @@
 #!/bin/bash
 
-IMAGE_NAME="treesapp-hyperpackage-workflow"
+IMAGE_NAME="ghcr.io/RyloByte/TS-Capstone-2025:latest"
 
 # check for/create user config file
 mkdir -p data utils results
