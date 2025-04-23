@@ -1,13 +1,8 @@
 #!/bin/bash
 
-IMAGE_NAME="ghcr.io/RyloByte/TS-Capstone-2025:latest"
+set -e
 
-# check for/create user config file
-mkdir -p data utils results
-if [ ! -f "config.yaml" ]; then
-  echo "Creating config.yaml from example file"
-  cp "config.yaml.example" "config.yaml"
-fi
+IMAGE_NAME="ghcr.io/RyloByte/TS-Capstone-2025:latest"
 
 # get number of processors
 if command -v nproc &> /dev/null; then
