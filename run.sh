@@ -19,7 +19,6 @@ fi
 # run deleting container with mounts
 docker run \
   --rm \
-  --platform linux/amd64 \
   -v "$(pwd)/data:/workflow-dir/data" \
   -v "$(pwd)/utils:/workflow-dir/utils" \
   -v "$(pwd)/results:/workflow-dir/results" \
