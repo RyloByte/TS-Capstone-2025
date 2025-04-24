@@ -3,6 +3,15 @@
 set -e
 
 IMAGE_NAME="ghcr.io/RyloByte/TS-Capstone-2025:latest"
+LOCAL_IMAGE_NAME="treesapp-hyperpackage-workflow"
+
+if docker pull $IMAGE_NAME >/dev/null 2>&1; then
+  echo "Using image from GitHub Container Registry"
+  RUN_IMAGE=$IMAGE_NAME
+else
+  echo "Attempting to use locally built image"
+  RUN_IMAGE=$LOCAL_IMAGE_NAME
+fi
 
 # make necessary directories
 mkdir -p data utils results
@@ -22,7 +31,7 @@ if [ -f "config.yaml" ]; then
     -v "$(pwd)/utils:/workflow-dir/utils" \
     -v "$(pwd)/results:/workflow-dir/results" \
     -v "$(pwd)/config.yaml:/workflow-dir/config.yaml" \
-    -it $IMAGE_NAME \
+    -it $RUN_IMAGE \
     -j $NUM_PROCS "$@"
 else
   docker run \
@@ -30,6 +39,6 @@ else
     -v "$(pwd)/data:/workflow-dir/data" \
     -v "$(pwd)/utils:/workflow-dir/utils" \
     -v "$(pwd)/results:/workflow-dir/results" \
-    -it $IMAGE_NAME \
+    -it $RUN_IMAGE \
     -j $NUM_PROCS "$@"
 fi
