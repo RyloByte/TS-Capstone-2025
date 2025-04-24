@@ -48,19 +48,18 @@ if __name__ == "__main__":
     # Extract tar.gz into temp dir
     with tempfile.TemporaryDirectory() as tmp:
         with tarfile.open(hyperpackage, "r:gz") as tar:
-            refpkg_dirs = [member.name for member in tar.getmembers() if member.isdir()]
+            tar.extractall(path=tmp)
+            refpkg_dirs = [item for item in os.listdir(tmp) if os.path.isdir(os.path.join(tmp, item))]
             if len(refpkg_dirs) == 0:
                 raise RuntimeError(f"No reference packages found in {hyperpackage}")
-            
-            tar.extractall(path=tmp)
-        
+
         # Create dir in temp dir which holds packages that have completed treesapp assign
         assigned_dir = os.path.join(tmp, "assigned_packages")
         os.mkdir(assigned_dir)
         shutil.copy(os.path.join(tmp, "manifest.json"), os.path.join(assigned_dir, "manifest.json"))
 
         # Perform treesapp assign on each refpkg
-        for refpkg in tqdm(sorted(refpkg_dirs), desc="Assigning", unit="refpkg"):
+        for refpkg in tqdm(sorted(refpkg_dirs), desc="Running TreeSAPP assign", unit="refpkg"):
             output_pkg_dir = os.path.join(assigned_dir, refpkg)
             input_pkg_dir = os.path.join(tmp, refpkg, "final_outputs")
             if os.path.isdir(input_pkg_dir):
