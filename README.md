@@ -88,7 +88,7 @@ snakemake --use-conda ...
 
 ### Docker
 
-Download the `run.sh` script from the repository and use the tool as `./run.sh ...`.
+[Download](https://github.com/RyloByte/TS-Capstone-2025/raw/refs/heads/master/run.sh) the `run.sh` script from the repository and use the tool as `./run.sh ...` rather than `snakemake --use-conda ...`.
 
 The run script will check for `config.yaml` and if it is not present use default values.
 

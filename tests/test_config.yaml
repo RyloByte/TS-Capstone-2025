@@ -18,6 +18,7 @@ sequence_clustering:
   max_cluster_size: null
   # argument to pass to mmseqs - can greatly impact hyperpackage composition
   mmseqs_args: [
+    "-c 0.8",
     "--min-seq-id 0.9",
     "--cov-mode 5",
     "-k 15",
