@@ -11,7 +11,9 @@ reference packages are made for each cluster, which are then combined into a "hy
 
 ## Google Colab Demo
 
-# == PLEASE PUT GOOGLE COLAB DEMO LINK + DESCRIPTION HERE ==
+For the purposes of simplicity and accessibility, we created this Google Colab demo to allow users to interact with our tool without any local setup. Colab provides an easy-to-use environment where users can run code, adjust parameters, and retrieve results directly in the browser, making it ideal for showcasing functionality.
+
+[Link to Google Colab UI](https://colab.research.google.com/github/RyloByte/TS-Capstone-2025/blob/%2335_2/notebooks/colab_hyperpackage_creation.ipynb)
 
 ## Hyperpackage Create Overview
 
@@ -44,7 +46,17 @@ gets SwissProt fastas based on Rhea or EC activity number, but you can use any S
 
 ## Hyperpackage Assign Overview
 
-# == PLEASE PUT ASSIGN FLOW CHART HERE ==
+```mermaid
+flowchart TD
+    A([Start])
+    B(Hyperpackage)
+    C(User-provided Fasta Sequences)
+    B-->D[TreeSAPP Assign]
+    C-->D[TreeSAPP Assign]
+    D-->E[Assigned Hyperpackage]
+    E-->F([End])
+```
+**NOTE:** Fasta sequences must be provided by the user. For more detail, view the Hyperpackage Assign section below.
 
 # Usage
 
@@ -116,7 +128,21 @@ snakemake --use-conda results/hyperpackages/my_seqs.refpkg.tar.gz
 
 ## Hyperpackage Assign
 
-# == PLEASE PUT INFO FOR USING HYPERPACKAGE ASSIGN HERE ==
+When using hyperpackage assign, the workflow will go through each reference package within a hyperpackage and assign a user-provided fasta file using TreeSAPP's assign function.
+
+To use hyperpackage assign, first place your input FASTA file in the `data/` directory and name it as `{fasta_name}.fasta`. No other action is needed for any hyperpackage created from this workflow in the same session. If you have already generated your own hyperpackage, place this file within the `results/hyperpackages/` directory. The tool will process your sequences and generate assigned hyperpackages based on structural and functional similarity.
+
+Once the a fasta file and a hyperpackage are in their appropriate directory location, run one of the commands below.
+```shell
+# for conda
+snakemake --use-conda results/assigned_hyperpackages/{fasta_name}/{sample_id}.refpkg.tar.gz
+
+# for docker
+./run.sh results/assigned_hyperpackages/{fasta_name}/{sample_id}.refpkg.tar.gz
+```
+Replace `{fasta_name}` with the name of your input file (without the .fasta extension), and `{sample_id}` with the identifier for your sample.
+
+After the assignment is complete, you can access your results at `results/assigned_hyperpackages/{fasta_name}/{sample_id}.refpkg.tar.gz`
 
 # File Layout
 
