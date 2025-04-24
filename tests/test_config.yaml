@@ -11,13 +11,14 @@ structure_clustering:
 
 sequence_clustering:
   # mute the output of the mmseqs2 tool
-  mute_mmseqs: false
+  mute_mmseqs: true
   # minimum cluster size to accept, inclusive, optional
   min_cluster_size: 5
   # maximum cluster size to accept, inclusive, optional
   max_cluster_size: null
   # argument to pass to mmseqs - can greatly impact hyperpackage composition
   mmseqs_args: [
+    "-c 0.8",
     "--min-seq-id 0.9",
     "--cov-mode 5",
     "-k 15",
@@ -29,12 +30,18 @@ sequence_clustering:
 
 treesapp_create:
   # mute the output of the treesapp tool
-  mute_treesapp: false
+  mute_treesapp: true
   # additional arguments to pass to treesapp
-  extra_args: []
+  extra_args: [
+    "--headless"
+  ]
 
 treesapp_assign:
+  # mute the output of the treesapp tool
+  mute_treesapp: true
   # additional argument to pass to treesapp
   extra_args: [
+    "-m prot",
+    "--trim_align",
     "-n 2"
   ]

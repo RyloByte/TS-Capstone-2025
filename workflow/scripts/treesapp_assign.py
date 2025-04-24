@@ -1,3 +1,4 @@
+import shutil
 import tarfile
 import subprocess
 import os
@@ -5,6 +6,7 @@ import tempfile
 from tqdm import tqdm
 
 config = snakemake.config["treesapp_assign"]
+MUTE_TREESAPP = config["mute_treesapp"]
 EXTRA_ARGS = []
 for item in config["extra_args"]:
     EXTRA_ARGS += item.split()
@@ -14,20 +16,21 @@ def run_treesapp_assign(input_fasta: str, output_dir: str, refpkg_path: str) -> 
     result = subprocess.run(
         [
             "treesapp", "assign", 
-             "-i", input_fasta, 
-             "-m", "prot", 
-             "--trim_align", 
+             "-i", input_fasta,
              "-o", output_dir,
              "--refpkg_dir", refpkg_path,
         ]
         + EXTRA_ARGS,
-        capture_output=True,
+        capture_output=MUTE_TREESAPP,
         text=True
     )
 
+    # check result
     if result.returncode != 0:
-        print(f"[ERROR] Failed on {refpkg_path}")
-        print(result.stderr)
+        if MUTE_TREESAPP:
+            print(result.stderr)
+        raise RuntimeError(f"Got non-zero return code from TreeSAPP: {result.returncode}")
+
 
 def create_tar_gz(output_path: str, input_dir: str):
     with tarfile.open(output_path, "w:gz") as tar:
@@ -45,18 +48,18 @@ if __name__ == "__main__":
     # Extract tar.gz into temp dir
     with tempfile.TemporaryDirectory() as tmp:
         with tarfile.open(hyperpackage, "r:gz") as tar:
-            members = tar.getmembers()
-            if len(members) == 0:
-                raise RuntimeError(f"No reference packages found in {hyperpackage}")
-            
             tar.extractall(path=tmp)
-        
+            refpkg_dirs = [item for item in os.listdir(tmp) if os.path.isdir(os.path.join(tmp, item))]
+            if len(refpkg_dirs) == 0:
+                raise RuntimeError(f"No reference packages found in {hyperpackage}")
+
         # Create dir in temp dir which holds packages that have completed treesapp assign
         assigned_dir = os.path.join(tmp, "assigned_packages")
-        refpkg_dirs = {member.name.split("/")[0] for member in members if "/" in member.name}
+        os.mkdir(assigned_dir)
+        shutil.copy(os.path.join(tmp, "manifest.json"), os.path.join(assigned_dir, "manifest.json"))
 
         # Perform treesapp assign on each refpkg
-        for refpkg in tqdm(sorted(refpkg_dirs), desc="Assigning", unit="refpkg"):
+        for refpkg in tqdm(sorted(refpkg_dirs), desc="Running TreeSAPP assign", unit="refpkg"):
             output_pkg_dir = os.path.join(assigned_dir, refpkg)
             input_pkg_dir = os.path.join(tmp, refpkg, "final_outputs")
             if os.path.isdir(input_pkg_dir):

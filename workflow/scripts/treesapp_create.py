@@ -35,12 +35,11 @@ def run_treesapp(input_fasta: str, ref_pkg_name: str, output_dir: str) -> None:
             "-c",
             ref_pkg_name,
             "-o",
-            output_dir,
-            "--headless",
+            output_dir
         ]
         + EXTRA_ARGS,
-        stdout=subprocess.PIPE if MUTE_TREESAPP else None,
-        stderr=subprocess.PIPE if MUTE_TREESAPP else None,
+        capture_output=MUTE_TREESAPP,
+        text=True
     )
 
     # check result

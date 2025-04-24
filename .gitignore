@@ -1,7 +1,10 @@
 .snakemake
 data/
 utils/
+results/
 config.yaml
+
+!tests/data/geneX.fasta
 
 ### VisualStudioCode template
 .vscode/*

@@ -1,0 +1,8 @@
+# Ignore everything
+*
+
+# Whitelist
+!workflow/
+!environment.yaml
+!entrypoint.sh
+!config.yaml.example
