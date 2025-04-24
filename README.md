@@ -49,8 +49,8 @@ gets SwissProt fastas based on Rhea or EC activity number, but you can use any S
 ```mermaid
 flowchart TD
     A([Start])
-    B(Hyperpackage)
-    C(User-provided Fasta Sequences)
+    A-->B(Hyperpackage)
+    A-->C(User-provided Fasta Sequences)
     B-->D[TreeSAPP Assign]
     C-->D[TreeSAPP Assign]
     D-->E[Assigned Hyperpackage]
