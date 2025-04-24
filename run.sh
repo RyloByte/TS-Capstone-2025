@@ -2,7 +2,7 @@
 
 set -e
 
-IMAGE_NAME="ghcr.io/RyloByte/TS-Capstone-2025:latest"
+IMAGE_NAME="ghcr.io/rylobyte/ts-capstone-2025:latest"
 LOCAL_IMAGE_NAME="treesapp-hyperpackage-workflow"
 
 if docker pull $IMAGE_NAME >/dev/null 2>&1; then
