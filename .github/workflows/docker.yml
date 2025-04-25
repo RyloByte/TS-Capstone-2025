@@ -2,8 +2,6 @@ name: Build and Push Docker image
 
 on:
   push:
-    branches:
-      - master
     tags:
       - 'v*'
 
@@ -28,5 +26,5 @@ jobs:
         with:
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}:${{ steps.extract.outputs.VERSION }}
-            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ format('{0}', github.repository) }}:${{ steps.extract.outputs.VERSION }}
+            ghcr.io/${{ format('{0}', github.repository) }}:latest
