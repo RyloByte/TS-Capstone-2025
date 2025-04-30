@@ -13,7 +13,7 @@ reference packages are made for each cluster, which are then combined into a "hy
 
 For the purposes of simplicity and accessibility, we created this Google Colab demo to allow users to interact with our tool without any local setup. Colab provides an easy-to-use environment where users can run code, adjust parameters, and retrieve results directly in the browser, making it ideal for showcasing functionality.
 
-[Link to Google Colab UI](https://colab.research.google.com/github/RyloByte/TS-Capstone-2025/blob/%2335_2/notebooks/colab_hyperpackage_creation.ipynb)
+[Link to Google Colab UI](https://colab.research.google.com/github/RyloByte/TS-Capstone-2025/blob/master/notebooks/colab_hyperpackage_creation.ipynb)
 
 ## Hyperpackage Create Overview
 
